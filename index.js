@@ -2,18 +2,14 @@
 
 const config = require('./config.json');
 
-var Client = require('node-rest-client').Client;
-var client = new Client();
+let Client = require('node-rest-client').Client;
+let client = new Client();
 
 /**
- * Format the Knowledge Graph API response into a richly formatted Slack message.
- *
- * @param {string} query The user's search query.
- * @param {object} response The response from the Untappd API.
- * @returns {object} The formatted message.
+ * @param {object} beerInfo Untappd's beer info
+ * @return {string} The rich slack message
  */
-function formatSlackMessage (query, beerInfo) {
-	// Prepare a rich Slack message
+function formatSlackMessage(beerInfo) {
 	// See https://api.slack.com/docs/message-formatting
 	let slackMessage = {
 		response_type: 'in_channel',
@@ -21,17 +17,24 @@ function formatSlackMessage (query, beerInfo) {
 	};
 
 	if (beerInfo) {
-		slackMessage.text = `*Rating: ${beerInfo.rating_score}*`;
-		for (var i = 0; i < Math.floor(beerInfo.rating_score); i++)
-			slackMessage.text = slackMessage.text + ":beer:"
+		let ratingString = '';
+		for (let i = 0; i < Math.floor(beerInfo.rating_score); i++)
+			ratingString = ratingString + ':beer:';
+		ratingString += ` *${beerInfo.rating_score}* (${beerInfo.rating_count} ratings)`;
 
-		const attachment = {
-			color: '#ffcc00'
+		let attachment = {
+			color: '#ffcc00',
+			title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
+			thumb_url: beerInfo.beer_label,
+			text: `${ratingString}\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
 		};
-		attachment.title = beerInfo.beer_name;
-		attachment.title_link = `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`;
-		attachment.text = beerInfo.beer_description;
-		attachment.thumb_url = beerInfo.beer_label;
+		if (beerInfo.brewery)
+			attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+		else
+			attachment.title = `${beerInfo.beer_name}`;
+		if (beerInfo.beer_description)
+			attachment.text += `\n${beerInfo.beer_description}`;
+
 		slackMessage.attachments.push(attachment);
 	} else {
 		slackMessage.attachments.push({
@@ -43,12 +46,10 @@ function formatSlackMessage (query, beerInfo) {
 }
 
 /**
- * Verify that the webhook request came from Slack.
- *
- * @param {object} body The body of the request.
- * @param {string} body.token The Slack token to be verified.
+ * @param {object} body The HTTP request body
+ * @throws If the request is not coming from Slack
  */
-function verifyWebhook (body) {
+function verifyWebhook(body) {
 	if (!body || body.token !== config.SLACK_TOKEN) {
 		const error = new Error('Invalid credentials');
 		error.code = 401;
@@ -56,53 +57,61 @@ function verifyWebhook (body) {
 	}
 }
 
-function searchForBeerId (query) {
+/**
+ * @param {string} query The beer search query string
+ * @return {int} The first found beer ID
+ */
+function searchForBeerId(query) {
 	return new Promise((resolve, reject) => {
 		let args = {
-			parameters: { 
-				q: query, 
+			parameters: {
+				q: query,
 				limit: 1,
-				client_id: config.UNTAPPD_CLIENT_ID, 
-				client_secret: config.UNTAPPD_CLIENT_SECRET 
+				client_id: config.UNTAPPD_CLIENT_ID,
+				client_secret: config.UNTAPPD_CLIENT_SECRET
 			},
 		};
 
-		let req = client.get("https://api.untappd.com/v4/search/beer", args, function (data, _) {
+		let req = client.get('https://api.untappd.com/v4/search/beer', args, function(data, _) {
 			let firstResult = data.response.beers.items[0];
 			if (firstResult)
 				resolve(firstResult.beer.bid);
 			else
-				reject("Couldn't find matching beer!")
+				reject('Couldn\'t find matching beer!');
 		});
 
-		req.on('error', function (err) {
+		req.on('error', function(err) {
 			reject(err);
 		});
 	});
 }
 
-function getBeerInfo (beerId) {
+/**
+ * @param {int} beerId The beer ID to look for
+ * @return {object} The Untapped data for this beer
+ */
+function getBeerInfo(beerId) {
 	return new Promise((resolve, reject) => {
 		let args = {
 			path: {
 				id: beerId
 			},
-			parameters: { 
-				compact: "true",
-				client_id: config.UNTAPPD_CLIENT_ID, 
+			parameters: {
+				compact: 'true',
+				client_id: config.UNTAPPD_CLIENT_ID,
 				client_secret: config.UNTAPPD_CLIENT_SECRET
 			},
 		};
-	
-		let req = client.get("https://api.untappd.com/v4/beer/info/${id}", args, function (data, _) {
+
+		let req = client.get('https://api.untappd.com/v4/beer/info/${id}', args, function(data, _) {
 			//console.log(data);
 			resolve(data.response.beer);
 		});
-	
-		req.on('error', function (err) {
+
+		req.on('error', function(err) {
 			reject(err);
 		});
-	  });
+	});
 }
 
 /**
@@ -119,6 +128,7 @@ function getBeerInfo (beerId) {
  * @param {string} req.body.token Slack's verification token.
  * @param {string} req.body.text The user's search query.
  * @param {object} res Cloud Function response object.
+ * @return {Promise} a Promise for the current request
  */
 exports.untappd = (req, res) => {
   return Promise.resolve()
@@ -132,15 +142,10 @@ exports.untappd = (req, res) => {
 		// Verify that this request came from Slack
 		verifyWebhook(req.body);
 
-		// Make the request to the Untappd API
 		return searchForBeerId(req.body.text);
 	})
-	.then((beerId) => {
-		return getBeerInfo(beerId);
-	})
-	.then((beerInfo) => {
-		return formatSlackMessage(req.body.text, beerInfo);
-	})	
+	.then((beerId) => getBeerInfo(beerId))
+	.then((beerInfo) => formatSlackMessage(beerInfo))
 	.then((response) => {
 		// Send the formatted message back to Slack
 		res.json(response);
