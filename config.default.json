@@ -1,0 +1,5 @@
+{
+  "SLACK_TOKEN": "[enter slack token here]",
+  "UNTAPPD_CLIENT_ID": "[enter untappd client ID here]",
+  "UNTAPPD_CLIENT_SECRET": "[enter untappd client secret here]"
+}
