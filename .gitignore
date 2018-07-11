@@ -62,3 +62,12 @@ typings/
 
 # config file (private keys stored in there!)
 config.json
+
+# npm local state (as I understand it)
+package-lock.json
+
+# VSCode
+*.code-workspace
+
+# deploy script (has absolute paths)
+deploy.cmd
