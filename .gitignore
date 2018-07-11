@@ -68,6 +68,7 @@ package-lock.json
 
 # VSCode
 *.code-workspace
+.vscode
 
 # deploy script (has absolute paths)
 deploy.cmd
