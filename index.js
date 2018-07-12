@@ -1,3 +1,7 @@
+/* global require */
+/* global console */
+/* global exports */
+/* global Promise */
 'use strict';
 
 const config = require('./config.json');
@@ -6,17 +10,17 @@ let Client = require('node-rest-client').Client;
 let client = new Client();
 
 /**
- * @param {object} beerInfo Untappd's beer info
+ * @param {object[]} beerInfos Untappd's beer info
  * @return {string} The rich slack message
  */
-function formatSlackMessage(beerInfo) {
+function formatSlackMessage(beerInfos) {
 	// See https://api.slack.com/docs/message-formatting
 	let slackMessage = {
 		response_type: 'in_channel',
 		attachments: []
 	};
 
-	if (beerInfo) {
+	for (let beerInfo of beerInfos) {
 		let ratingString = '';
 		for (let i = 0; i < Math.floor(beerInfo.rating_score); i++)
 			ratingString = ratingString + ':beer:';
@@ -36,10 +40,6 @@ function formatSlackMessage(beerInfo) {
 			attachment.text += `\n${beerInfo.beer_description}`;
 
 		slackMessage.attachments.push(attachment);
-	} else {
-		slackMessage.attachments.push({
-			text: 'No results match your query...'
-		});
 	}
 
 	return slackMessage;
@@ -62,6 +62,7 @@ function verifyWebhook(body) {
  * @return {int} The first found beer ID
  */
 function searchForBeerId(query) {
+	//console.log(`query : ${query}`);
 	return new Promise((resolve, reject) => {
 		let args = {
 			parameters: {
@@ -76,9 +77,10 @@ function searchForBeerId(query) {
 			let firstResult = data.response.beers.count > 0 ? data.response.beers.items[0] :
 							data.response.homebrew.count > 0 ? data.response.homebrew.items[0] :
 							null;
-			if (firstResult)
+			if (firstResult) {
+				//console.log(`beer id : ${firstResult.beer.bid}`);
 				resolve(firstResult.beer.bid);
-			else
+			} else
 				reject('Couldn\'t find matching beer!');
 		});
 
@@ -106,7 +108,7 @@ function getBeerInfo(beerId) {
 		};
 
 		let req = client.get('https://api.untappd.com/v4/beer/info/${id}', args, function(data, _) {
-			//console.log(data);
+			//console.log(`beer info : ${data.response.beer}`);
 			resolve(data.response.beer);
 		});
 
@@ -144,10 +146,10 @@ exports.untappd = (req, res) => {
 		// Verify that this request came from Slack
 		verifyWebhook(req.body);
 
-		return searchForBeerId(req.body.text);
+		return Promise.all(req.body.text.split(',').map((x) => searchForBeerId(x.trim())));
 	})
-	.then((beerId) => getBeerInfo(beerId))
-	.then((beerInfo) => formatSlackMessage(beerInfo))
+	.then((beerIds) => Promise.all(beerIds.map((x) => getBeerInfo(x))))
+	.then((beerInfos) => formatSlackMessage(beerInfos))
 	.then((response) => {
 		// Send the formatted message back to Slack
 		res.json(response);
