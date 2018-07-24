@@ -1,7 +1,7 @@
 {
     "extends": "google",
     "parserOptions": {
-        "ecmaVersion": 6
+        "ecmaVersion": 2017
     },
     "rules":{
         "linebreak-style": 0,
@@ -11,6 +11,7 @@
         "curly": 0,
         "spaced-comment": 0,
         "no-undef": 1,
-        "no-unused-vars": 1
+        "no-unused-vars": 1,
+        "arrow-parens": 0
     }
 }
