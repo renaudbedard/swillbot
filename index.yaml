@@ -1,0 +1,5 @@
+indexes:
+- kind: BeerId
+  ancestor: yes
+- kind: User
+  ancestor: yes

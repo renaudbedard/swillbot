@@ -71,4 +71,5 @@ package-lock.json
 .vscode
 
 # deploy script (has absolute paths)
-deploy.cmd
+deploy*.cmd
+create*.cmd
