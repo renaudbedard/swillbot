@@ -17,6 +17,25 @@ const datastore = new Datastore({
 });
 
 /**
+ * @param {float} rating The Untappd rating
+ * @return {string} The emoji string
+ */
+function getRatingString(rating) {
+	let ratingString = '';
+	for (let i = 0; i < Math.floor(rating); i++)
+		ratingString += ':fullbeer:';
+	let fraction = rating - Math.floor(rating);
+	if (fraction >= 0.75)
+		ratingString += ':threequarterbeer:';
+	else if (fraction >= 0.5)
+		ratingString += ':halfbeer:';
+	else if (fraction >= 0.25)
+		ratingString += ':quarterbeer:';
+	ratingString += ` *${rating}*`;
+	return ratingString;
+}
+
+/**
  * @param {object[]} beerInfos Untappd's beer info
  * @return {string} The rich slack message
  */
@@ -28,16 +47,13 @@ function formatBeerInfoSlackMessage(beerInfos) {
 	};
 
 	for (let beerInfo of beerInfos) {
-		let ratingString = '';
-		for (let i = 0; i < Math.floor(beerInfo.rating_score); i++)
-			ratingString = ratingString + ':beer:';
-		ratingString += ` *${beerInfo.rating_score}* (${beerInfo.rating_count} ratings)`;
+		let ratingString = getRatingString(beerInfo.rating_score);
 
 		let attachment = {
 			color: '#ffcc00',
 			title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
 			thumb_url: beerInfo.beer_label,
-			text: `${ratingString}\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
+			text: `${ratingString} (${beerInfo.rating_count} ratings)\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
 		};
 		if (beerInfo.brewery)
 			attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
@@ -65,11 +81,7 @@ function formatReviewSlackMessage(userName, reviewInfo) {
 	};
 
 	const beerInfo = reviewInfo.beerInfo;
-
-	let ratingString = '';
-	for (let i = 0; i < Math.floor(reviewInfo.rating); i++)
-		ratingString = ratingString + ':beer:';
-	ratingString += ` *${reviewInfo.rating}*`;
+	const ratingString = getRatingString(beerInfo.rating_score);
 
 	let attachment = {
 		color: '#ffcc00',
@@ -206,6 +218,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 	let batchCount = 0;
 	let totalCount = 50;
 	let beerData = null;
+	const entitiesToUpsert = [];
 
 	// TODO: don't get all of them, start at last fetched check-in?
 	// TODO: get the review text using https://untappd.com/api/docs#useractivityfeed
@@ -235,9 +248,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 							rating: item.rating_score
 						}
 					};
-					datastore.upsert(entity).then(() => {
-						console.log(`inserted entity for beerId = ${item.beer.bid}`);
-					});
+					entitiesToUpsert.push(entity);
 
 					if (item.beer.bid == beerId) {
 						console.log(`found!`);
@@ -250,6 +261,10 @@ async function findAndCacheUserBeers(userName, beerId) {
 			req.on('error', function(err) {
 				throw err; // TODO: or reject...?
 			});
+		});
+
+		datastore.upsert(entitiesToUpsert).then(() => {
+			console.log(`upserted ${entitiesToUpsert.length} entities`);
 		});
 
 		if (beerData !== null)
@@ -292,6 +307,49 @@ exports.untappd = (req, res) => {
 };
 
 /**
+ * Usage : [user]
+ * @param {object} req Cloud Function request object.
+ * @param {object} res Cloud Function response object.
+ * @return {Promise} a Promise for the current request
+ */
+exports.username = (req, res) => {
+	const slackUser = req.body.user_name;
+	const untappdUser = req.body.text.trim();
+
+	return Promise.resolve()
+		.then(() => {
+			if (req.method !== 'POST') {
+				const error = new Error('Only POST requests are accepted');
+				error.code = 405;
+				throw error;
+			}
+
+			// Verify that this request came from Slack
+			verifyWebhook(req.body);
+
+			datastore.upsert({
+				key: datastore.key(['SlackUser', slackUser]),
+				data: {
+					untappdUser: untappdUser
+				}
+			});
+
+			let slackMessage = {
+				response_type: 'in_channel',
+				attachments: [
+					{
+						title: 'User registered!',
+						color: '#ffcc00',
+						text: `Slack user \`${slackUser}\` will be known as Untappd user \`${untappdUser}\``
+					}
+				]
+			};
+
+			res.json(slackMessage);
+		});
+};
+
+/**
  * Usage : [user], [query]
  * @param {object} req Cloud Function request object.
  * @param {object} res Cloud Function response object.
@@ -310,6 +368,9 @@ exports.review = (req, res) => {
 
 			// Verify that this request came from Slack
 			verifyWebhook(req.body);
+
+			// TODO: send HTTP 200 response here and use response_url for a late response
+			// https://api.slack.com/slash-commands#responding_response_url
 
 			const portions = req.body.text.split(',');
 			userName = portions[0];
