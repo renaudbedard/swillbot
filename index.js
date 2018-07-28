@@ -83,7 +83,6 @@ function formatReviewSlackMessage(userId, untappdUser, reviewInfo, beerInfo) {
 	};
 
 	const ratingString = getRatingString(reviewInfo.rating);
-	const dateOptions = {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'};
 
 	let attachment = {
 		color: '#ffcc00',
@@ -200,7 +199,8 @@ async function findReview(userName, beerId) {
 		reviewInfo = entities[0];
 	else {
 		// if there are no results, fill cache
-		reviewInfo = findAndCacheUserBeers(userName, beerId);
+		console.log(`couldn't find beer id ${beerId} for username ${userName}, will cache user beers`);
+		reviewInfo = await findAndCacheUserBeers(userName, beerId);
 	}
 
 	// separate request for the check-in comment
@@ -219,7 +219,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 	let batchCount = 0;
 	let totalCount = 50;
 	let beerData = null;
-	const entitiesToUpsert = [];
+	let entitiesToUpsert = [];
 
 	for (let cursor = 0; cursor < totalCount; cursor += batchCount) {
 		await new Promise(resolve => {
@@ -250,7 +250,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 					entitiesToUpsert.push(entity);
 
 					if (item.beer.bid == beerId) {
-						//console.log(`found!`);
+						console.log(`found!`);
 						beerData = entity.data;
 						break;
 					}
@@ -262,14 +262,20 @@ async function findAndCacheUserBeers(userName, beerId) {
 			});
 		});
 
+		if (entitiesToUpsert.length >= 450) {
+			await datastore.upsert(entitiesToUpsert);
+			console.log(`upserted ${entitiesToUpsert.length} entities`);
+			entitiesToUpsert = [];
+		}
+
 		if (beerData != null)
 			break;
 	}
 
-	if (entitiesToUpsert.length > 0)
-		datastore.upsert(entitiesToUpsert).then(() => {
-			//console.log(`upserted ${entitiesToUpsert.length} entities`);
-		});
+	if (entitiesToUpsert.length > 0) {
+		await datastore.upsert(entitiesToUpsert);
+		console.log(`upserted ${entitiesToUpsert.length} entities`);
+	}
 
 	return beerData;
 }
@@ -422,6 +428,7 @@ exports.review = (req, res) => {
 				query = portions[0].trim();
 			} else {
 				userId = portions[0].trim();
+				userId = userId.slice(userId.indexOf('@') + 1, userId.indexOf('|'));
 				query = portions[1].trim();
 			}
 
