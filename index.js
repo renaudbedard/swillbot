@@ -69,34 +69,38 @@ function formatBeerInfoSlackMessage(beerInfos) {
 }
 
 /**
- * @param {string} userName The user
+ * @param {string} userId The Slack user ID
+ * @param {string} untappdUser The Untappd user name
  * @param {object} reviewInfo Untappd review info
+ * @param {object} beerInfo Untappd beer info
  * @return {string} The rich slack message
  */
-function formatReviewSlackMessage(userName, reviewInfo) {
+function formatReviewSlackMessage(userId, untappdUser, reviewInfo, beerInfo) {
 	// See https://api.slack.com/docs/message-formatting
 	let slackMessage = {
 		response_type: 'in_channel',
 		attachments: []
 	};
 
-	const beerInfo = reviewInfo.beerInfo;
-	const ratingString = getRatingString(beerInfo.rating_score);
+	const ratingString = getRatingString(reviewInfo.rating);
+	const dateOptions = {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'};
 
 	let attachment = {
 		color: '#ffcc00',
 		title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
 		thumb_url: beerInfo.beer_label,
-		text: `${ratingString}`
+		text: `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? 's' : ''})`
 	};
 	if (beerInfo.brewery)
 		attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
 	else
 		attachment.title = `${beerInfo.beer_name}`;
 
-	// TODO: add review
-	attachment.text += `\nThis is a placeholder review blah blah blah.`;
-	attachment.text += `\n\t- ${userName}, 01/01/2018 10:10`;
+	attachment.text += `\n${reviewInfo.checkinComment}`;
+
+	const date = reviewInfo.recentCheckinTimestamp;
+	const dateString = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
+	attachment.text += `\n\t- <@${userId}>, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recentCheckinId}|${dateString}>`;
 
 	slackMessage.attachments.push(attachment);
 
@@ -181,37 +185,34 @@ function getBeerInfo(beerId) {
  * @param {int} beerId The beer ID to look for
  * @return {object[]} The Untappd checkins
  */
-function findReview(userName, beerId) {
-	console.log(`userName = ${userName}, beerId = ${beerId}`);
-	return new Promise(resolve => {
-		// look in cache first
-		const query = datastore.createQuery('BeerId')
-			.filter('__key__', '=', datastore.key(['User', userName, 'BeerId', beerId]));
+async function findReview(userName, beerId) {
+	//console.log(`userName = ${userName}, beerId = ${beerId}`);
 
-		datastore.runQuery(query).then(results => {
-			const entities = results[0];
+	// look in cache first
+	const query = datastore.createQuery('BeerId')
+		.filter('__key__', '=', datastore.key(['User', userName, 'BeerId', beerId]));
 
-			// TODO: what does the info thing contain? is it usable for error-handling?
-			//const info = results[1];
-			//console.log(info);
+	const results = await datastore.runQuery(query);
+	const entities = results[0];
 
-			resolve(entities);
-		});
-	}).then(entities => {
-		if (entities.length > 0) {
-			//entities.forEach(e => console.log(e));
-			return entities[0];
-		}
-
+	let reviewInfo;
+	if (entities.length > 0)
+		reviewInfo = entities[0];
+	else {
 		// if there are no results, fill cache
-		return findAndCacheUserBeers(userName);
-	});
+		reviewInfo = findAndCacheUserBeers(userName, beerId);
+	}
+
+	// separate request for the check-in comment
+	reviewInfo.checkinComment = await getCheckinComment(reviewInfo.recentCheckinId);
+
+	return reviewInfo;
 }
 
 /**
  * @param {string} userName The user to get unique beers from
  * @param {int} beerId The beer ID to stop at
- * @return {object} The review entity
+ * @return {Promise<object>} The review entity
  */
 async function findAndCacheUserBeers(userName, beerId) {
 	const limit = 50;
@@ -219,9 +220,6 @@ async function findAndCacheUserBeers(userName, beerId) {
 	let totalCount = 50;
 	let beerData = null;
 	const entitiesToUpsert = [];
-
-	// TODO: don't get all of them, start at last fetched check-in?
-	// TODO: get the review text using https://untappd.com/api/docs#useractivityfeed
 
 	for (let cursor = 0; cursor < totalCount; cursor += batchCount) {
 		await new Promise(resolve => {
@@ -243,15 +241,16 @@ async function findAndCacheUserBeers(userName, beerId) {
 					const entity = {
 						key: datastore.key(['User', userName, 'BeerId', item.beer.bid]),
 						data: {
-							firstCheckinId: item.first_checkin_id,
 							recentCheckinId: item.recent_checkin_id,
+							recentCheckinTimestamp: new Date(item.recent_created_at),
+							count: item.count,
 							rating: item.rating_score
 						}
 					};
 					entitiesToUpsert.push(entity);
 
 					if (item.beer.bid == beerId) {
-						console.log(`found!`);
+						//console.log(`found!`);
 						beerData = entity.data;
 						break;
 					}
@@ -263,14 +262,57 @@ async function findAndCacheUserBeers(userName, beerId) {
 			});
 		});
 
+		if (beerData != null)
+			break;
+	}
+
+	if (entitiesToUpsert.length > 0)
 		datastore.upsert(entitiesToUpsert).then(() => {
-			console.log(`upserted ${entitiesToUpsert.length} entities`);
+			//console.log(`upserted ${entitiesToUpsert.length} entities`);
 		});
 
-		if (beerData !== null)
-			return beerData;
-	}
 	return beerData;
+}
+
+/**
+ * @param {int} checkinId The ID of the check-in
+ * @return {string} The check-in comment for that ID
+ */
+function getCheckinComment(checkinId) {
+	return new Promise((resolve, reject) => {
+		let args = {
+			path: {
+				checkinId: checkinId
+			},
+			parameters: {
+				client_id: config.UNTAPPD_CLIENT_ID,
+				client_secret: config.UNTAPPD_CLIENT_SECRET
+			},
+		};
+
+		let req = client.get('https://api.untappd.com/v4/checkin/view/${checkinId}', args, function(data, _) {
+			//console.log(`beer info : ${data.response.beer}`);
+			resolve(data.response.checkin.checkin_comment);
+		});
+
+		req.on('error', function(err) {
+			reject(err);
+		});
+	});
+}
+
+/**
+ * @param {string} slackUserId The Slack user's ID
+ * @return {Promise<string>} The Untappd user name
+ */
+async function getUntappdUser(slackUserId) {
+	const datastoreQuery = datastore.createQuery('SlackUser')
+				.filter('__key__', '=', datastore.key(['SlackUser', slackUserId]))
+				.limit(1);
+
+	const queryResult = await datastore.runQuery(datastoreQuery);
+	//console.log(queryResult);
+	return queryResult[0][0].untappdUser;
 }
 
 /**
@@ -313,7 +355,7 @@ exports.untappd = (req, res) => {
  * @return {Promise} a Promise for the current request
  */
 exports.username = (req, res) => {
-	const slackUser = req.body.user_name;
+	const slackUser = req.body.user_id;
 	const untappdUser = req.body.text.trim();
 
 	return Promise.resolve()
@@ -340,12 +382,17 @@ exports.username = (req, res) => {
 					{
 						title: 'User registered!',
 						color: '#ffcc00',
-						text: `Slack user \`${slackUser}\` will be known as Untappd user \`${untappdUser}\``
+						text: `Slack user <@${slackUser}> will be known as Untappd user \`${untappdUser}\``
 					}
 				]
 			};
 
 			res.json(slackMessage);
+		})
+		.catch(err => {
+			console.error(err);
+			res.status(err.code || 500).send(err);
+			return Promise.reject(err);
 		});
 };
 
@@ -356,40 +403,34 @@ exports.username = (req, res) => {
  * @return {Promise} a Promise for the current request
  */
 exports.review = (req, res) => {
-	let userName;
-	let query;
 	return Promise.resolve()
-		.then(() => {
+		.then(async function() {
 			if (req.method !== 'POST') {
 				const error = new Error('Only POST requests are accepted');
 				error.code = 405;
 				throw error;
 			}
 
-			// Verify that this request came from Slack
 			verifyWebhook(req.body);
 
-			// TODO: send HTTP 200 response here and use response_url for a late response
-			// https://api.slack.com/slash-commands#responding_response_url
+			let query;
+			let userId;
 
 			const portions = req.body.text.split(',');
-			userName = portions[0];
-			query = portions[1];
+			if (portions.length == 1) {
+				userId = req.body.user_id;
+				query = portions[0].trim();
+			} else {
+				userId = portions[0].trim();
+				query = portions[1].trim();
+			}
 
-			return searchForBeerId(query);
-		})
-		.then(async function(beerId) {
-			const reviewInfo = await findReview(userName, beerId);
-			reviewInfo.beerId = beerId;
-			return reviewInfo;
-		})
-		.then(async function(reviewInfo) {
-			reviewInfo.beerInfo = await getBeerInfo(reviewInfo.beerId);
-			return reviewInfo;
-		})
-		.then(reviewInfo => formatReviewSlackMessage(userName, reviewInfo))
-		.then(response => {
-			// Send the formatted message back to Slack
+			//console.log(`userId = ${userId}, query = ${query}`);
+
+			const [untappdUser, beerId] = await Promise.all([getUntappdUser(userId), searchForBeerId(query)]);
+			const [reviewInfo, beerInfo] = await Promise.all([findReview(untappdUser, beerId), getBeerInfo(beerId)]);
+			const response = await formatReviewSlackMessage(userId, untappdUser, reviewInfo, beerInfo);
+
 			res.json(response);
 		})
 		.catch(err => {
