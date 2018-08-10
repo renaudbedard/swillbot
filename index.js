@@ -392,8 +392,7 @@ exports.untappd = (req, res) => {
 				headers: {'Content-Type': 'application/json'}
 			};
 			client.post(req.body.response_url, args, function(data, response) {
-				console.log(`Success!`);
-				return;
+				//console.log(`Success!`);
 			});
 		})
 		.catch(err => {
@@ -404,7 +403,6 @@ exports.untappd = (req, res) => {
 			};
 			client.post(req.body.response_url, args, function(data, response) {
 				console.log(`Error! : ${err}`);
-				return;
 			});
 		});
 };
@@ -416,6 +414,7 @@ exports.untappd = (req, res) => {
  * @return {Promise} a Promise for the current request
  */
 exports.username = (req, res) => {
+	// TODO: use receipt + delayed response
 	const slackUser = req.body.user_id;
 	const untappdUser = req.body.text.trim();
 
@@ -459,6 +458,7 @@ exports.username = (req, res) => {
  * @return {Promise} a Promise for the current request
  */
 exports.review = (req, res) => {
+	// TODO: use receipt + delayed response
 	return Promise.resolve()
 		.then(async function() {
 			verifyWebhook(req);
