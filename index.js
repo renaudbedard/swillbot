@@ -6,15 +6,22 @@
 
 const config = require('./config.json');
 
-const projectId = 'swill-untappd-slack-bot';
-
 let Client = require('node-rest-client').Client;
 let client = new Client();
 
-const Datastore = require('@google-cloud/datastore');
-const datastore = new Datastore({
-	projectId: projectId,
-});
+/**
+ * @return {Promise<Datastore>} when the datastore's initialized
+ */
+function initializeDatastore() {
+	return new Promise((resolve, reject) => {
+		const projectId = 'swill-untappd-slack-bot';
+		const Datastore = require('@google-cloud/datastore');
+		const datastore = new Datastore({
+			projectId: projectId,
+		});
+		resolve(datastore);
+	});
+}
 
 /**
  * @param {float} rating The Untappd rating
@@ -69,11 +76,41 @@ function formatBeerInfoSlackMessage(beerInfos) {
 }
 
 /**
+ * Formats an error as a Slack message.
+ * @param {string} query The query
+ * @param {object} err The error details
+ * @return {object} The Slack message
+ */
+function formatError(query, err) {
+	let slackMessage = {
+		response_type: 'ephemeral',
+		text: `Oops! Something went wrong with your query '${query}'.`,
+		attachments: [{
+			color: '#ff0000',
+			text: err.toString()
+		}]
+	};
+	return slackMessage;
+}
+
+/**
+ * Formats a receipt as a Slack message.
+ * @return {object} The Slack message
+ */
+function formatReceipt() {
+	let slackMessage = {
+		response_type: 'ephemeral',
+		text: 'Working... :hourglass_flowing_sand:',
+	};
+	return slackMessage;
+}
+
+/**
  * @param {string} userId The Slack user ID
  * @param {string} untappdUser The Untappd user name
  * @param {object} reviewInfo Untappd review info
  * @param {object} beerInfo Untappd beer info
- * @return {string} The rich slack message
+ * @return {object} The rich slack message
  */
 function formatReviewSlackMessage(userId, untappdUser, reviewInfo, beerInfo) {
 	// See https://api.slack.com/docs/message-formatting
@@ -107,13 +144,19 @@ function formatReviewSlackMessage(userId, untappdUser, reviewInfo, beerInfo) {
 }
 
 /**
- * @param {object} body The HTTP request body
+ * @param {object} req The HTTP request
  * @throws If the request is not coming from Slack
  */
-function verifyWebhook(body) {
-	if (!body || body.token !== config.SLACK_TOKEN) {
+function verifyWebhook(req) {
+	if (!req.body || req.body.token !== config.SLACK_TOKEN) {
 		const error = new Error('Invalid credentials');
 		error.code = 401;
+		throw error;
+	}
+
+	if (req.method !== 'POST') {
+		const error = new Error('Only POST requests are accepted');
+		error.code = 405;
 		throw error;
 	}
 }
@@ -180,11 +223,12 @@ function getBeerInfo(beerId) {
 }
 
 /**
+ * @param {Datastore} datastore The Google datastore
  * @param {string} userName The user to get checkins from
  * @param {int} beerId The beer ID to look for
  * @return {object[]} The Untappd checkins
  */
-async function findReview(userName, beerId) {
+async function findReview(datastore, userName, beerId) {
 	//console.log(`userName = ${userName}, beerId = ${beerId}`);
 
 	// look in cache first
@@ -200,7 +244,7 @@ async function findReview(userName, beerId) {
 	else {
 		// if there are no results, fill cache
 		console.log(`couldn't find beer id ${beerId} for username ${userName}, will cache user beers`);
-		reviewInfo = await findAndCacheUserBeers(userName, beerId);
+		reviewInfo = await findAndCacheUserBeers(datastore, userName, beerId);
 	}
 
 	// separate request for the check-in comment
@@ -210,11 +254,12 @@ async function findReview(userName, beerId) {
 }
 
 /**
+ * @param {Datastore} datastore The Google datastore
  * @param {string} userName The user to get unique beers from
  * @param {int} beerId The beer ID to stop at
  * @return {Promise<object>} The review entity
  */
-async function findAndCacheUserBeers(userName, beerId) {
+async function findAndCacheUserBeers(datastore, userName, beerId) {
 	const limit = 50;
 	let batchCount = 0;
 	let totalCount = 50;
@@ -308,10 +353,11 @@ function getCheckinComment(checkinId) {
 }
 
 /**
+ * @param {Datastore} datastore The Google datastore
  * @param {string} slackUserId The Slack user's ID
  * @return {Promise<string>} The Untappd user name
  */
-async function getUntappdUser(slackUserId) {
+async function getUntappdUser(datastore, slackUserId) {
 	const datastoreQuery = datastore.createQuery('SlackUser')
 				.filter('__key__', '=', datastore.key(['SlackUser', slackUserId]))
 				.limit(1);
@@ -328,29 +374,38 @@ async function getUntappdUser(slackUserId) {
  * @return {Promise} a Promise for the current request
  */
 exports.untappd = (req, res) => {
+	// receipt!
+	res.status(200).send(formatReceipt());
+
+	let startTime = new Date().getTime();
 	return Promise.resolve()
 		.then(() => {
-			if (req.method !== 'POST') {
-				const error = new Error('Only POST requests are accepted');
-				error.code = 405;
-				throw error;
-			}
-
-			// Verify that this request came from Slack
-			verifyWebhook(req.body);
-
+			verifyWebhook(req);
 			return Promise.all(req.body.text.split(',').map(x => searchForBeerId(x.trim())));
 		})
 		.then(beerIds => Promise.all(beerIds.map(x => getBeerInfo(x))))
 		.then(beerInfos => formatBeerInfoSlackMessage(beerInfos))
-		.then(response => {
-			// Send the formatted message back to Slack
-			res.json(response);
+		.then(message => {
+			console.log(`Function evaluation took ${new Date().getTime() - startTime}ms total.`);
+			const args = {
+				data: message,
+				headers: {'Content-Type': 'application/json'}
+			};
+			client.post(req.body.response_url, args, function(data, response) {
+				console.log(`Success!`);
+				return;
+			});
 		})
 		.catch(err => {
-			console.error(err);
-			res.status(err.code || 500).send(err);
-			return Promise.reject(err);
+			console.log(`Function evaluation took ${new Date().getTime() - startTime}ms total.`);
+			const args = {
+				data: formatError(req.body.text, err),
+				headers: {'Content-Type': 'application/json'}
+			};
+			client.post(req.body.response_url, args, function(data, response) {
+				console.log(`Error! : ${err}`);
+				return;
+			});
 		});
 };
 
@@ -365,15 +420,10 @@ exports.username = (req, res) => {
 	const untappdUser = req.body.text.trim();
 
 	return Promise.resolve()
-		.then(() => {
-			if (req.method !== 'POST') {
-				const error = new Error('Only POST requests are accepted');
-				error.code = 405;
-				throw error;
-			}
+		.then(async function() {
+			verifyWebhook(req);
 
-			// Verify that this request came from Slack
-			verifyWebhook(req.body);
+			const datastore = await initializeDatastore();
 
 			datastore.upsert({
 				key: datastore.key(['SlackUser', slackUser]),
@@ -411,13 +461,7 @@ exports.username = (req, res) => {
 exports.review = (req, res) => {
 	return Promise.resolve()
 		.then(async function() {
-			if (req.method !== 'POST') {
-				const error = new Error('Only POST requests are accepted');
-				error.code = 405;
-				throw error;
-			}
-
-			verifyWebhook(req.body);
+			verifyWebhook(req);
 
 			let query;
 			let userId;
@@ -434,8 +478,9 @@ exports.review = (req, res) => {
 
 			//console.log(`userId = ${userId}, query = ${query}`);
 
-			const [untappdUser, beerId] = await Promise.all([getUntappdUser(userId), searchForBeerId(query)]);
-			const [reviewInfo, beerInfo] = await Promise.all([findReview(untappdUser, beerId), getBeerInfo(beerId)]);
+			const [beerId, datastore] = await Promise.all([searchForBeerId(query), initializeDatastore()]);
+			const [untappdUser, beerInfo] = await Promise.all([getUntappdUser(datastore, userId), getBeerInfo(beerId)]);
+			const reviewInfo = await findReview(datastore, untappdUser, beerId);
 			const response = await formatReviewSlackMessage(userId, untappdUser, reviewInfo, beerInfo);
 
 			res.json(response);
