@@ -6,20 +6,24 @@
 
 const config = require('./config.json');
 
-let Client = require('node-rest-client').Client;
-let client = new Client();
+const Client = require('node-rest-client').Client;
+const client = new Client();
+
+// lazy-initialized but stored & reused!
+let Datastore;
+let datastore;
 
 /**
- * @return {Promise<Datastore>} when the datastore's initialized
+ * @return {Promise} when the datastore's initialized
  */
 function initializeDatastore() {
 	return new Promise((resolve, reject) => {
 		const projectId = 'swill-untappd-slack-bot';
-		const Datastore = require('@google-cloud/datastore');
-		const datastore = new Datastore({
+		Datastore = Datastore || require('@google-cloud/datastore');
+		datastore = datastore || new Datastore({
 			projectId: projectId,
 		});
-		resolve(datastore);
+		resolve();
 	});
 }
 
@@ -223,12 +227,11 @@ function getBeerInfo(beerId) {
 }
 
 /**
- * @param {Datastore} datastore The Google datastore
  * @param {string} userName The user to get checkins from
  * @param {int} beerId The beer ID to look for
  * @return {object[]} The Untappd checkins
  */
-async function findReview(datastore, userName, beerId) {
+async function findReview(userName, beerId) {
 	//console.log(`userName = ${userName}, beerId = ${beerId}`);
 
 	// look in cache first
@@ -244,7 +247,7 @@ async function findReview(datastore, userName, beerId) {
 	else {
 		// if there are no results, fill cache
 		console.log(`couldn't find beer id ${beerId} for username ${userName}, will cache user beers`);
-		reviewInfo = await findAndCacheUserBeers(datastore, userName, beerId);
+		reviewInfo = await findAndCacheUserBeers(userName, beerId);
 	}
 
 	// separate request for the check-in comment
@@ -254,12 +257,11 @@ async function findReview(datastore, userName, beerId) {
 }
 
 /**
- * @param {Datastore} datastore The Google datastore
  * @param {string} userName The user to get unique beers from
  * @param {int} beerId The beer ID to stop at
  * @return {Promise<object>} The review entity
  */
-async function findAndCacheUserBeers(datastore, userName, beerId) {
+async function findAndCacheUserBeers(userName, beerId) {
 	const limit = 50;
 	let batchCount = 0;
 	let totalCount = 50;
@@ -353,11 +355,10 @@ function getCheckinComment(checkinId) {
 }
 
 /**
- * @param {Datastore} datastore The Google datastore
  * @param {string} slackUserId The Slack user's ID
  * @return {Promise<string>} The Untappd user name
  */
-async function getUntappdUser(datastore, slackUserId) {
+async function getUntappdUser(slackUserId) {
 	const datastoreQuery = datastore.createQuery('SlackUser')
 				.filter('__key__', '=', datastore.key(['SlackUser', slackUserId]))
 				.limit(1);
@@ -374,10 +375,11 @@ async function getUntappdUser(datastore, slackUserId) {
  * @return {Promise} a Promise for the current request
  */
 exports.untappd = (req, res) => {
+	let startTime = new Date().getTime();
+
 	// receipt!
 	res.status(200).send(formatReceipt());
 
-	let startTime = new Date().getTime();
 	return Promise.resolve()
 		.then(() => {
 			verifyWebhook(req);
@@ -414,7 +416,11 @@ exports.untappd = (req, res) => {
  * @return {Promise} a Promise for the current request
  */
 exports.username = (req, res) => {
-	// TODO: use receipt + delayed response
+	let startTime = new Date().getTime();
+
+	// receipt!
+	res.status(200).send(formatReceipt());
+
 	const slackUser = req.body.user_id;
 	const untappdUser = req.body.text.trim();
 
@@ -422,10 +428,14 @@ exports.username = (req, res) => {
 		.then(async function() {
 			verifyWebhook(req);
 
-			const datastore = await initializeDatastore();
+			console.log(`[${new Date().getTime() - startTime}] Initializing datastore...`);
+			await initializeDatastore();
+			console.log(`[${new Date().getTime() - startTime}] done.`);
+
+			const key = datastore.key(['SlackUser', slackUser]);
 
 			datastore.upsert({
-				key: datastore.key(['SlackUser', slackUser]),
+				key: key,
 				data: {
 					untappdUser: untappdUser
 				}
@@ -442,12 +452,22 @@ exports.username = (req, res) => {
 				]
 			};
 
-			res.json(slackMessage);
+			const args = {
+				data: slackMessage,
+				headers: {'Content-Type': 'application/json'}
+			};
+			client.post(req.body.response_url, args, function(data, response) {
+				//console.log(`Success!`);
+			});
 		})
-		.catch(err => {
-			console.error(err);
-			res.status(err.code || 500).send(err);
-			return Promise.reject(err);
+		.catch(async function(err) {
+			const args = {
+				data: formatError(req.body.text, err),
+				headers: {'Content-Type': 'application/json'}
+			};
+			client.post(req.body.response_url, args, function(data, response) {
+				console.log(`Error! : ${err}`);
+			});
 		});
 };
 
@@ -478,9 +498,9 @@ exports.review = (req, res) => {
 
 			//console.log(`userId = ${userId}, query = ${query}`);
 
-			const [beerId, datastore] = await Promise.all([searchForBeerId(query), initializeDatastore()]);
-			const [untappdUser, beerInfo] = await Promise.all([getUntappdUser(datastore, userId), getBeerInfo(beerId)]);
-			const reviewInfo = await findReview(datastore, untappdUser, beerId);
+			const [beerId] = await Promise.all([searchForBeerId(query), initializeDatastore()]);
+			const [untappdUser, beerInfo] = await Promise.all([getUntappdUser(userId), getBeerInfo(beerId)]);
+			const reviewInfo = await findReview(untappdUser, beerId);
 			const response = await formatReviewSlackMessage(userId, untappdUser, reviewInfo, beerInfo);
 
 			res.json(response);
