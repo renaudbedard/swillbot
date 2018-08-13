@@ -27,17 +27,16 @@ function getRatingString(rating) {
 
 /**
  * Formats an error as a Slack message.
- * @param {string} query The query
  * @param {object} err The error details
  * @return {object} The Slack message
  */
-function formatError(query, err) {
+function formatError(err) {
 	let slackMessage = {
 		response_type: 'ephemeral',
-		text: `Oops! Something went wrong with your query '${query}'.`,
+		text: `Oops! Something went wrong with your query '${err.source}'.`,
 		attachments: [{
 			color: '#ff0000',
-			text: err.toString()
+			text: err.message
 		}]
 	};
 	return slackMessage;
@@ -67,11 +66,11 @@ function searchForBeerId(query) {
 				//console.log(`beer id : ${firstResult.beer.bid}`);
 				resolve(firstResult.beer.bid);
 			} else
-				reject('Couldn\'t find matching beer!');
+				reject({ source: query, message: 'Couldn\'t find matching beer!' });
 		});
 
 		req.on('error', function(err) {
-			reject(err);
+			reject({ source: query, message: err.toString() });
 		});
 	});
 }
@@ -99,7 +98,7 @@ function getBeerInfo(beerId) {
 		});
 
 		req.on('error', function(err) {
-			reject(err);
+			reject({ source: beerId, message: err.toString() });
 		});
 	});
 }
