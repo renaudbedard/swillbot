@@ -39,13 +39,20 @@ function formatBeerInfoSlackMessage(beerInfos) {
 }
 
 const handler = async function(payload, res) {
-    const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim())));
-    const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x)));
-    const message = formatBeerInfoSlackMessage(beerInfos);
+    let errorOccured = false;
+    const errorHandler = err => {
+        res.status(200).json(util.formatError(err));
+        errorOccured = true;
+    };
+
+    const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim()))).catch(errorHandler);
+    if (errorOccured) return;
+
+    const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(errorHandler);
+    if (errorOccured) return;
 
     res.set('content-type', 'application/json');
-    res.status(200).json(message);
-    return;
+    res.status(200).json(formatBeerInfoSlackMessage(beerInfos));
 };
 
 module.exports = { handler: handler, name: 'untappd' };
