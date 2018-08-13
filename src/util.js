@@ -4,7 +4,7 @@
 'use strict';
 
 const config = require('./config');
-const client = require('./rest-client');
+const client = require('./rest-client').client;
 
 /**
  * @param {float} rating The Untappd rating
