@@ -15,13 +15,12 @@ const handler = async function(payload, res) {
         await pg.query(
             `create table user_mapping if not exists (
                 slack_user_id integer primary key, 
-                untappd_username varchar not null
-            );`);
+                untappd_username varchar not null);`);
 
         // upsert user
         const upsertResult = await pg.query(
             `insert into user_mapping(slack_user_id, untappd_username) values ($1, $2)            
-            on conflict (slack_user_id) do update set(untappd_username) = $2`,
+             on conflict (slack_user_id) do update set(untappd_username) = $2;`,
             [slackUser, untappdUser]);
 
         console.log(`upserted rows : ${upsertResult.rowCount}`);
