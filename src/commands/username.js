@@ -27,7 +27,7 @@ const handler = async function(payload, res) {
         console.log(`upserted rows : ${upsertResult.rowCount}`);
     } catch (err) {
         res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError({source: payload.text, message: err}));
+        res.status(200).json(util.formatError({source: payload.text, message: JSON.stringify(err)}));
         return;
     }
 
