@@ -16,17 +16,23 @@ const handler = async function(payload, res) {
             `create table user_mapping if not exists (
                 slack_user_id integer primary key, 
                 untappd_username varchar not null);`);
+    } catch (err) {
+        res.set('content-type', 'application/json');
+        res.status(200).json(util.formatError({source: 'create table', message: JSON.stringify(err)}));
+        return;
+    }
 
+    try {
         // upsert user
         const upsertResult = await pg.query(
             `insert into user_mapping(slack_user_id, untappd_username) values ($1, $2)            
-             on conflict (slack_user_id) do update set(untappd_username) = $2;`,
+             on conflict (slack_user_id) do update set untappd_username = $2;`,
             [slackUser, untappdUser]);
 
         console.log(`upserted rows : ${upsertResult.rowCount}`);
     } catch (err) {
         res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError({source: payload.text, message: JSON.stringify(err)}));
+        res.status(200).json(util.formatError({source: 'upsert', message: JSON.stringify(err)}));
         return;
     }
 
