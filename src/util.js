@@ -5,6 +5,12 @@
 
 const config = require('./config');
 const client = require('./rest-client').client;
+const _ = require('lodash');
+
+const untappdParams = {
+	client_id: config.UNTAPPD_CLIENT_ID,
+	client_secret: config.UNTAPPD_CLIENT_SECRET
+};
 
 /**
  * @param {float} rating The Untappd rating
@@ -50,12 +56,10 @@ function searchForBeerId(query) {
 	//console.log(`query : ${query}`);
 	return new Promise((resolve, reject) => {
 		let args = {
-			parameters: {
+			parameters: _.defaults({
 				q: query,
 				limit: 1,
-				client_id: config('UNTAPPD_CLIENT_ID'),
-				client_secret: config('UNTAPPD_CLIENT_SECRET')
-			},
+			}, untappdParams),
 		};
 
 		let req = client.get('https://api.untappd.com/v4/search/beer', args, function(data, _) {
@@ -85,11 +89,9 @@ function getBeerInfo(beerId) {
 			path: {
 				id: beerId
 			},
-			parameters: {
-				compact: 'true',
-				client_id: config('UNTAPPD_CLIENT_ID'),
-				client_secret: config('UNTAPPD_CLIENT_SECRET')
-			},
+			parameters: _.defaults({
+				compact: 'true'
+			}, untappdParams)
 		};
 
 		let req = client.get('https://api.untappd.com/v4/beer/info/${id}', args, function(data, _) {

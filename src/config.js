@@ -16,11 +16,7 @@ const config = {
   SLACK_TOKEN: process.env.SLACK_TOKEN,
   UNTAPPD_CLIENT_ID: process.env.UNTAPPD_CLIENT_ID,
   UNTAPPD_CLIENT_SECRET: process.env.UNTAPPD_CLIENT_SECRET,
-  ICON_EMOJI: ':stars:'
+  DATABASE_URL: process.env.DATABASE_URL
 };
 
-module.exports = (key) => {
-  if (!key) return config;
-
-  return config[key];
-};
+module.exports = config;
