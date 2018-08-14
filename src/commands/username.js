@@ -4,14 +4,14 @@
 'use strict';
 
 const util = require('../util');
-const pg = require('../pg-client').client;
+const pg = require('../pg-client');
 
 const handler = async function(payload, res) {
     const slackUser = payload.user_id;
 	const untappdUser = payload.text.trim();
 
-    // ensure table exists
     try {
+        // ensure table exists
         await pg.query(
             `create table user_mapping if not exists (
                 slack_user_id integer primary key, 
@@ -26,6 +26,7 @@ const handler = async function(payload, res) {
 
         console.log(`upserted rows : ${upsertResult.rowCount}`);
     } catch (err) {
+        res.set('content-type', 'application/json');
         res.status(200).json(util.formatError({source: payload.text, message: err}));
         return;
     }

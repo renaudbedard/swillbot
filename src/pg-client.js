@@ -11,6 +11,6 @@ const client = new Client({
   ssl: true
 });
 
-module.exports = {
-    client: client
-};
+client.connect();
+
+module.exports = client;

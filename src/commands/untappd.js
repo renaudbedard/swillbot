@@ -41,6 +41,7 @@ function formatBeerInfoSlackMessage(beerInfos) {
 const handler = async function(payload, res) {
     let errorOccured = false;
     const errorHandler = err => {
+		res.set('content-type', 'application/json');
         res.status(200).json(util.formatError(err));
         errorOccured = true;
     };
