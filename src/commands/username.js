@@ -13,7 +13,7 @@ const handler = async function(payload, res) {
     try {
         // ensure table exists
         await pg.query(
-            `create table user_mapping if not exists (
+            `create table if not exists user_mapping (
                 slack_user_id integer primary key, 
                 untappd_username varchar not null);`);
     } catch (err) {
