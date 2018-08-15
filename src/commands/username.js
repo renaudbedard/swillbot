@@ -17,6 +17,7 @@ const handler = async function(payload, res) {
                 slack_user_id integer primary key, 
                 untappd_username varchar not null);`);
     } catch (err) {
+        console.log(err.stack);
         res.set('content-type', 'application/json');
         res.status(200).json(util.formatError({source: 'create table', message: JSON.stringify(err)}));
         return;
@@ -31,6 +32,7 @@ const handler = async function(payload, res) {
 
         console.log(`upserted rows : ${upsertResult.rowCount}`);
     } catch (err) {
+        console.log(err.stack);
         res.set('content-type', 'application/json');
         res.status(200).json(util.formatError({source: 'upsert', message: JSON.stringify(err)}));
         return;
