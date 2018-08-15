@@ -1,16 +1,38 @@
 /* global module */
+/* global console */
 /* global require */
 /* global Promise */
 'use strict';
 
 const config = require('./config');
 const client = require('./rest-client');
+const pg = require('./pg-client');
 const _ = require('lodash');
 
 const untappdParams = {
 	client_id: config.UNTAPPD_CLIENT_ID,
 	client_secret: config.UNTAPPD_CLIENT_SECRET
 };
+
+/**
+ * @param {string} query The SQL query
+ * @param {object[]} values Query values (optional)
+ * @param {string} context What this query performs
+ * @param {object} res The HTTP response object
+ * @return {QueryResult} The query result
+ */
+async function pgSafeQuery(query, values, context, res) {
+    try {
+        // ensure table exists
+        return await pg.query(query, values);
+    } catch (err) {
+        console.log(err.stack);
+		res.set('content-type', 'application/json');
+		err = {source: context, message: err.stack};
+		res.status(200).json(formatError(err));
+		throw err;
+    }
+}
 
 /**
  * @param {float} rating The Untappd rating
@@ -109,5 +131,6 @@ module.exports = {
     getRatingString: getRatingString,
     formatError: formatError,
     searchForBeerId: searchForBeerId,
-    getBeerInfo: getBeerInfo
+	getBeerInfo: getBeerInfo,
+	pgSafeQuery: pgSafeQuery
 };

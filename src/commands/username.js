@@ -1,45 +1,23 @@
 /* global require */
 /* global module */
-/* global console */
 'use strict';
 
 const util = require('../util');
-const pg = require('../pg-client');
 
 const handler = async function(payload, res) {
     const slackUser = payload.user_id;
-	const untappdUser = payload.text.trim();
+    const untappdUser = payload.text.trim();
 
-    try {
-        // drop if exists (DEBUG ONLY)
-        await pg.query(`drop table user_mapping;`);
+    await util.pgSafeQuery(
+        `create table if not exists user_mapping (
+        slack_user_id varchar primary key, 
+        untappd_username varchar not null);`,
+        null, 'Create user mapping table', res);
 
-        // ensure table exists
-        await pg.query(
-            `create table if not exists user_mapping (
-                slack_user_id varchar primary key, 
-                untappd_username varchar not null);`);
-    } catch (err) {
-        console.log(err.stack);
-        res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError({source: 'create table', message: err.stack}));
-        return;
-    }
-
-    try {
-        // upsert user
-        const upsertResult = await pg.query(
-            `insert into user_mapping(slack_user_id, untappd_username) values ($1, $2)            
-             on conflict (slack_user_id) do update set untappd_username = $2;`,
-            [slackUser, untappdUser]);
-
-        console.log(`upserted rows : ${upsertResult.rowCount}`);
-    } catch (err) {
-        console.log(err.stack);
-        res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError({source: 'upsert', message: err.stack}));
-        return;
-    }
+    await util.pgSafeQuery(
+        `insert into user_mapping(slack_user_id, untappd_username) values ($1, $2)            
+        on conflict (slack_user_id) do update set untappd_username = $2;`,
+        [slackUser, untappdUser], 'Add user mapping entry', res);
 
     let slackMessage = {
         response_type: 'in_channel',
