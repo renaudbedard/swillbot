@@ -11,15 +11,18 @@ const handler = async function(payload, res) {
 	const untappdUser = payload.text.trim();
 
     try {
+        // drop if exists (DEBUG ONLY)
+        await pg.query(`drop table user_mapping;`);
+
         // ensure table exists
         await pg.query(
             `create table if not exists user_mapping (
-                slack_user_id integer primary key, 
+                slack_user_id varchar primary key, 
                 untappd_username varchar not null);`);
     } catch (err) {
         console.log(err.stack);
         res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError({source: 'create table', message: JSON.stringify(err)}));
+        res.status(200).json(util.formatError({source: 'create table', message: err.stack}));
         return;
     }
 
@@ -34,7 +37,7 @@ const handler = async function(payload, res) {
     } catch (err) {
         console.log(err.stack);
         res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError({source: 'upsert', message: JSON.stringify(err)}));
+        res.status(200).json(util.formatError({source: 'upsert', message: err.stack}));
         return;
     }
 
