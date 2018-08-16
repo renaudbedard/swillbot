@@ -14,10 +14,21 @@ const pgPool = require('../pg-pool');
  * @return {Promise<string>} The Untappd user name
  */
 async function getUntappdUser(slackUserId) {
-    return await util.tryPgQuery(null,
+    const result = await util.tryPgQuery(null,
         `select untappd_username from user_mapping
         where slack_user_id = $1`,
-        [slackUserId], `Find Untappd username from Slack ID '${slackUserId}'`).rows[0].untappd_username;
+		[slackUserId], `Find Untappd username from Slack ID '${slackUserId}'`);
+
+	if (result.rows.length == 0) {
+		const err = {
+			source: `Finding Untappd username for Slack user ID ${slackUserId}`,
+			message: 'No user found in database! Did you forget to register using `/username`?'
+		};
+		throw err;
+	}
+
+	console.log(`found untappd username : ${result.rows[0].untappd_username}`);
+	return result.rows[0].untappd_username;
 }
 
 /**
@@ -205,9 +216,9 @@ const handler = async function(payload, res) {
 
 		const beerId = await util.searchForBeerId(query);
 
-		console.log(`found beer id : ${beerId}`);
+		//console.log(`found beer id : ${beerId}`);
 
-        const [beerInfo, [untappdUser, reviewInfo]] = Promise.all([
+        const [beerInfo, [untappdUser, reviewInfo]] = await Promise.all([
             util.getBeerInfo(beerId),
             async function() {
 				const u = await getUntappdUser(slackUser);
