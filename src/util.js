@@ -90,7 +90,7 @@ function searchForBeerId(query) {
 				//console.log(`beer id : ${firstResult.beer.bid}`);
 				resolve(firstResult.beer.bid);
 			} else
-				reject({ source: query, message: 'Couldn\'t find matching beer!' });
+				reject({ source: `Search for beer '${query}'`, message: 'Couldn\'t find matching beer!' });
 		});
 
 		req.on('error', function(err) {

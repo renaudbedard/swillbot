@@ -162,7 +162,11 @@ function getCheckinComment(checkinId) {
 			parameters: util.untappdParams
 		};
 		let req = restClient.get('https://api.untappd.com/v4/checkin/view/${checkinId}', args, function(data, _) {
-			resolve(data.response.checkin.checkin_comment);
+			if (!data.response.checkin) {
+				console.log(_);
+				reject({ source: `Get check-in comment for #${checkinId}`, message: 'Couldn\'t find matching check-in!' });
+			} else
+				resolve(data.response.checkin.checkin_comment);
 		});
 		req.on('error', function(err) {
 			reject({ source: `Get check-in comment for #${checkinId}`, message: err.toString() });
