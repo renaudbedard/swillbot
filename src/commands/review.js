@@ -213,7 +213,7 @@ function formatReviewSlackMessage(slackUserId, untappdUser, reviewInfo, beerInfo
 }
 
 const handler = async function(payload, res) {
-    const slackUser = payload.user_id;
+    let slackUser = payload.user_id;
     let query = payload.text;
 
     if (payload.text.indexOf('@') > 0) {
