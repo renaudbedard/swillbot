@@ -98,7 +98,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 		pgClient.query('BEGIN;');
 
 		for (let cursor = 0; cursor < totalCount; cursor += batchCount) {
-			args.offset = cursor;
+			args.parameters.offset = cursor;
 
 			// TODO: error handling?
 			const res = await restClient.getPromise('https://api.untappd.com/v4/user/beers/${userName}', args);
