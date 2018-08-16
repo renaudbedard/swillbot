@@ -118,7 +118,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 					],
 					`Add user review for user ${userName} and beer ID ${item.beer.bid}`);
 
-				console.log(`upserted beer id ${item.beer.bid}`);
+				//console.log(`upserted beer id ${item.beer.bid}`);
 				upsertedCount++;
 
 				if (item.beer.bid == beerId) {
