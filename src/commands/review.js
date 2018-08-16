@@ -108,7 +108,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 					`insert into user_reviews (
 					username, beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating) 
 					values ($1, $2, $3, $4, $5, $6)
-					on conflict (slack_user_id) do update set 
+					on conflict (username, beer_id) do update set 
 					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6;`,
 					[
 						userName, item.beer.bid, item.recent_checkin_id,
