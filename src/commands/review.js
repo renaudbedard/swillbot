@@ -203,13 +203,17 @@ const handler = async function(payload, res) {
 			throw err;
 		};
 
-        const beerId = await util.searchForBeerId(query);
+		const beerId = await util.searchForBeerId(query);
+
+		console.log(`found beer id : ${beerId}`);
 
         const [beerInfo, [untappdUser, reviewInfo]] = Promise.all([
             util.getBeerInfo(beerId),
             async function() {
-                const u = await getUntappdUser(slackUser);
-                const ri = await findReview(u, beerId);
+				const u = await getUntappdUser(slackUser);
+				console.log(`found untappd user : ${u}`);
+				const ri = await findReview(u, beerId);
+				console.log(`found review info : ${ri}`);
                 return [u, ri];
             }]
         ).catch(onErrorRethrow);
