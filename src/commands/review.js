@@ -68,7 +68,7 @@ async function findReview(userName, beerId) {
 	}
 
 	// separate request for the check-in comment
-	reviewInfo.checkinComment = await getCheckinComment(reviewInfo.recentCheckinId);
+	reviewInfo.checkin_comment = await getCheckinComment(reviewInfo.recent_checkin_id);
 
 	return reviewInfo;
 }
@@ -201,11 +201,11 @@ function formatReviewSlackMessage(slackUserId, untappdUser, reviewInfo, beerInfo
 	else
 		attachment.title = `${beerInfo.beer_name}`;
 
-	attachment.text += `\n${reviewInfo.checkinComment}`;
+	attachment.text += `\n${reviewInfo.checkin_comment}`;
 
-	const date = reviewInfo.recentCheckinTimestamp;
+	const date = reviewInfo.recent_checkin_timestamp;
 	const dateString = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
-	attachment.text += `\n\t- <@${slackUserId}>, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recentCheckinId}|${dateString}>`;
+	attachment.text += `\n\t- <@${slackUserId}>, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
 
 	slackMessage.attachments.push(attachment);
 
