@@ -37,10 +37,13 @@ async function getUntappdUser(slackUserId) {
 async function findReview(userName, beerId) {
 	//console.log(`userName = ${userName}, beerId = ${beerId}`);
 
+	// DEBUG -- drop table
+	await util.tryPgQuery(null, 'drop table user_reviews', null, 'Debug drop');
+
 	// create table if needed
 	await util.tryPgQuery(null,
 		`create table if not exists user_reviews (
-		username integer not null,
+		username varchar not null,
 		beer_id integer not null,
 		recent_checkin_id integer,
 		recent_checkin_timestamp date,
@@ -218,7 +221,7 @@ const handler = async function(payload, res) {
 		const untappdUser = await getUntappdUser(slackUser);
 		console.log(`found untappd user : ${untappdUser}`);
 
-		const reviewInfo = await findReview(slackUser);
+		const reviewInfo = await findReview(untappdUser);
 		console.log(`found review info : ${JSON.stringify(reviewInfo)}`);
 
 		/*
