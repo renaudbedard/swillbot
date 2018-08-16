@@ -226,7 +226,7 @@ const handler = async function(payload, res) {
 		console.log(`found beer id : ${beerId}`);
 
 		const beerInfo = await util.getBeerInfo(beerId);
-		console.log(`found beer info : ${JSON.stringify(beerInfo)}`);
+		//console.log(`found beer info : ${JSON.stringify(beerInfo)}`);
 
 		const untappdUser = await getUntappdUser(slackUser);
 		console.log(`found untappd user : ${untappdUser}`);
