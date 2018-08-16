@@ -218,7 +218,7 @@ const handler = async function(payload, res) {
 
 		//console.log(`found beer id : ${beerId}`);
 
-        const [beerInfo, [untappdUser, reviewInfo]] = await Promise.all([
+        const [beerInfo, asyncResult] = await Promise.all([
             util.getBeerInfo(beerId),
             async function() {
 				const u = await getUntappdUser(slackUser);
@@ -227,7 +227,10 @@ const handler = async function(payload, res) {
 				console.log(`found review info : ${ri}`);
                 return [u, ri];
             }]
-        ).catch(onErrorRethrow);
+		).catch(onErrorRethrow);
+
+		const untappdUser = asyncResult[0];
+		const reviewInfo = asyncResult[1];
 
         const slackMessage = formatReviewSlackMessage(slackUser, untappdUser, reviewInfo, beerInfo);
 
