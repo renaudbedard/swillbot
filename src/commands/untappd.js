@@ -39,21 +39,20 @@ function formatBeerInfoSlackMessage(beerInfos) {
 }
 
 const handler = async function(payload, res) {
-    let errorOccured = false;
-    const errorHandler = err => {
+	try {
+		const onErrorRethrow = err => {
+			throw err;
+		};
+
+		const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim()))).catch(onErrorRethrow);
+		const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(onErrorRethrow);
+
+		res.set('content-type', 'application/json');
+		res.status(200).json(formatBeerInfoSlackMessage(beerInfos));
+	} catch (err) {
 		res.set('content-type', 'application/json');
         res.status(200).json(util.formatError(err));
-        errorOccured = true;
-    };
-
-    const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim()))).catch(errorHandler);
-    if (errorOccured) return;
-
-    const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(errorHandler);
-    if (errorOccured) return;
-
-    res.set('content-type', 'application/json');
-    res.status(200).json(formatBeerInfoSlackMessage(beerInfos));
+	}
 };
 
 module.exports = { handler: handler, name: 'untappd' };

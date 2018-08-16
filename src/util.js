@@ -5,8 +5,7 @@
 'use strict';
 
 const config = require('./config');
-const client = require('./rest-client');
-const pg = require('./pg-client');
+const restClient = require('./rest-client');
 const _ = require('lodash');
 
 const untappdParams = {
@@ -15,21 +14,19 @@ const untappdParams = {
 };
 
 /**
+ * @param {object} client The PG client
  * @param {string} query The SQL query
  * @param {object[]} values Query values (optional)
  * @param {string} context What this query performs
- * @param {object} res The HTTP response object
  * @return {QueryResult} The query result
  */
-async function pgSafeQuery(query, values, context, res) {
+async function tryPgQuery(client, query, values, context) {
     try {
         // ensure table exists
-        return await pg.query(query, values);
+        return await client.query(query, values);
     } catch (err) {
-        console.log(err.stack);
-		res.set('content-type', 'application/json');
+		console.log(err.stack);
 		err = {source: context, message: err.stack};
-		res.status(200).json(formatError(err));
 		throw err;
     }
 }
@@ -61,7 +58,7 @@ function getRatingString(rating) {
 function formatError(err) {
 	let slackMessage = {
 		response_type: 'ephemeral',
-		text: `Oops! Something went wrong with your query '${err.source}'.`,
+		text: `Oops! Something went wrong with this operation : '${err.source}'.`,
 		attachments: [{
 			color: '#ff0000',
 			text: err.message
@@ -84,7 +81,7 @@ function searchForBeerId(query) {
 			}, untappdParams),
 		};
 
-		let req = client.get('https://api.untappd.com/v4/search/beer', args, function(data, _) {
+		let req = restClient.get('https://api.untappd.com/v4/search/beer', args, function(data, _) {
 			let firstResult = data.response.beers.count > 0 ? data.response.beers.items[0] :
 							data.response.homebrew.count > 0 ? data.response.homebrew.items[0] :
 							null;
@@ -96,7 +93,7 @@ function searchForBeerId(query) {
 		});
 
 		req.on('error', function(err) {
-			reject({ source: query, message: err.toString() });
+			reject({ source: `Search for beer '${query}'`, message: err.toString() });
 		});
 	});
 }
@@ -116,13 +113,13 @@ function getBeerInfo(beerId) {
 			}, untappdParams)
 		};
 
-		let req = client.get('https://api.untappd.com/v4/beer/info/${id}', args, function(data, _) {
+		let req = restClient.get('https://api.untappd.com/v4/beer/info/${id}', args, function(data, _) {
 			//console.log(`beer info : ${data.response.beer}`);
 			resolve(data.response.beer);
 		});
 
 		req.on('error', function(err) {
-			reject({ source: beerId, message: err.toString() });
+			reject({ source: `Get beer info for beer #${beerId}`, message: err.toString() });
 		});
 	});
 }
@@ -132,5 +129,6 @@ module.exports = {
     formatError: formatError,
     searchForBeerId: searchForBeerId,
 	getBeerInfo: getBeerInfo,
-	pgSafeQuery: pgSafeQuery
+	tryPgQuery: tryPgQuery,
+	untappdParams: untappdParams
 };
