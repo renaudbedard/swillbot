@@ -14,7 +14,7 @@ const pgPool = require('../pg-pool');
  * @return {Promise<string>} The Untappd user name
  */
 async function getUntappdUser(slackUserId) {
-    return await util.tryPgQuery(
+    return await util.tryPgQuery(null,
         `select untappd_username from user_mapping
         where slack_user_id = $1`,
         [slackUserId], `Find Untappd username from Slack ID '${slackUserId}'`).rows[0].untappd_username;
@@ -29,7 +29,7 @@ async function findReview(userName, beerId) {
     //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
 	// look in cache first
-    const result = await util.tryPgQuery(
+    const result = await util.tryPgQuery(null,
         `select * from user_reviews
         where username = $1 and beer_id = $2`,
         [userName, beerId], `Find beer reviews for user ${userName} and beer ID ${beerId}`);

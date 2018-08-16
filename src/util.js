@@ -24,24 +24,7 @@ const untappdParams = {
 async function tryPgQuery(client, query, values, context) {
     try {
         // ensure table exists
-        return await client.query(query, values);
-    } catch (err) {
-		console.log(err.stack);
-		err = {source: context, message: err.stack};
-		throw err;
-    }
-}
-
-/**
- * @param {string} query The SQL query
- * @param {object[]} values Query values (optional)
- * @param {string} context What this query performs
- * @return {QueryResult} The query result
- */
-async function tryPgQuery(query, values, context) {
-    try {
-        // ensure table exists
-        return await pgPool.query(query, values);
+        return await (client || pgPool).query(query, values);
     } catch (err) {
 		console.log(err.stack);
 		err = {source: context, message: err.stack};
