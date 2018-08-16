@@ -210,14 +210,20 @@ const handler = async function(payload, res) {
     }
 
     try {
-		const onErrorRethrow = err => {
-			throw err;
-		};
-
 		const beerId = await util.searchForBeerId(query);
+		console.log(`found beer id : ${beerId}`);
 
-		//console.log(`found beer id : ${beerId}`);
+		const beerInfo = await util.getBeerInfo(beerId);
+		console.log(`found beer info : ${JSON.stringify(beerInfo)}`);
 
+		const untappdUser = await getUntappdUser(slackUser);
+		console.log(`found untappd user : ${untappdUser}`);
+
+		const reviewInfo = await findReview(slackUser);
+		console.log(`found review info : ${JSON.stringify(reviewInfo)}`);
+
+		/*
+		const onErrorRethrow = err => { throw err; };
         const [beerInfo, asyncResult] = await Promise.all([
             util.getBeerInfo(beerId),
             async function() {
@@ -228,9 +234,9 @@ const handler = async function(payload, res) {
                 return [u, ri];
             }]
 		).catch(onErrorRethrow);
-
 		const untappdUser = asyncResult[0];
 		const reviewInfo = asyncResult[1];
+		*/
 
         const slackMessage = formatReviewSlackMessage(slackUser, untappdUser, reviewInfo, beerInfo);
 
