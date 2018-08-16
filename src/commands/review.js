@@ -60,7 +60,7 @@ async function findReview(userName, beerId) {
 
     let reviewInfo;
 	if (result.rows.length == 1)
-		reviewInfo = reviewInfo.rows[0];
+		reviewInfo = result.rows[0];
 	else {
 		// if there are no results, fill cache
 		console.log(`couldn't find beer id ${beerId} for username ${userName}, will cache user beers`);
