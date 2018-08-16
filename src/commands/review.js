@@ -26,8 +26,6 @@ async function getUntappdUser(slackUserId) {
 		};
 		throw err;
 	}
-
-	console.log(`found untappd username : ${result.rows[0].untappd_username}`);
 	return result.rows[0].untappd_username;
 }
 
@@ -37,7 +35,19 @@ async function getUntappdUser(slackUserId) {
  * @return {object[]} The Untappd checkins
  */
 async function findReview(userName, beerId) {
-    //console.log(`userName = ${userName}, beerId = ${beerId}`);
+	//console.log(`userName = ${userName}, beerId = ${beerId}`);
+
+	// create table if needed
+	await util.tryPgQuery(null,
+		`create table if not exists user_reviews (
+		username integer not null,
+		beer_id integer not null,
+		recent_checkin_id integer,
+		recent_checkin_timestamp date,
+		count integer,
+		rating real,
+		primary key (username, beer_id));`,
+		null, 'Create user reviews table');
 
 	// look in cache first
     const result = await util.tryPgQuery(null,
@@ -72,17 +82,6 @@ async function findAndCacheUserBeers(userName, beerId) {
 
 	// make sure the table exists
 	try {
-		await util.tryPgQuery(pgClient,
-			`create table if not exists user_reviews (
-			username integer not null,
-			beer_id integer not null,
-			recent_checkin_id integer,
-			recent_checkin_timestamp date,
-			count integer,
-			rating real,
-			primary key (username, beer_id));`,
-			null, 'Create user reviews table');
-
 		const limit = 50;
 		let batchCount = 0;
 		let totalCount = 50;
