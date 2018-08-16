@@ -94,10 +94,11 @@ async function findAndCacheUserBeers(userName, beerId) {
 			path: { userName: userName },
 			parameters: _.defaults({ limit: limit }, util.untappdParams)
 		};
+
+		pgClient.query('BEGIN;');
+
 		for (let cursor = 0; cursor < totalCount; cursor += batchCount) {
 			args.offset = cursor;
-
-			pgClient.query('BEGIN;');
 
 			// TODO: error handling?
 			const res = await restClient.getPromise('https://api.untappd.com/v4/user/beers/${userName}', args);
@@ -116,6 +117,8 @@ async function findAndCacheUserBeers(userName, beerId) {
 						new Date(item.recent_created_at), item.count, item.rating_score
 					],
 					`Add user review for user ${userName} and beer ID ${item.beer.bid}`);
+
+				console.log(`upserted beer id ${item.beer.bid}`);
 				upsertedCount++;
 
 				if (item.beer.bid == beerId) {
@@ -224,7 +227,7 @@ const handler = async function(payload, res) {
 		const untappdUser = await getUntappdUser(slackUser);
 		console.log(`found untappd user : ${untappdUser}`);
 
-		const reviewInfo = await findReview(untappdUser);
+		const reviewInfo = await findReview(untappdUser, beerId);
 		console.log(`found review info : ${JSON.stringify(reviewInfo)}`);
 
 		/*
