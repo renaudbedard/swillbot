@@ -88,6 +88,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 		const limit = 50;
 		let batchCount = 0;
 		let totalCount = 50;
+		let upsertedCount = 0;
 
 		const args = {
 			path: { userName: userName },
@@ -115,6 +116,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 						new Date(item.recent_created_at), item.count, item.rating_score
 					],
 					`Add user review for user ${userName} and beer ID ${item.beer.bid}`);
+				upsertedCount++;
 
 				if (item.beer.bid == beerId) {
 					console.log(`found!`);
@@ -135,6 +137,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 		}
 
 		pgClient.query('COMMIT;');
+		console.log(`upserted ${upsertedCount} rows`);
 	} catch (err) {
 		pgClient.query('ROLLBACK;');
 		throw err;
