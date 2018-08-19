@@ -15,9 +15,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
 	// See https://api.slack.com/docs/message-formatting
 	let slackMessage = {
 		response_type: 'in_channel',
-		attachments: [
-			{ text: `${source}: \`${query}\`` }
-		]
+		attachments: []
 	};
 
 	for (let beerInfo of beerInfos) {
@@ -38,6 +36,9 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
 
 		slackMessage.attachments.push(attachment);
 	}
+
+	if (slackMessage.attachments.length > 0)
+		slackMessage.attachments[0].pretext = `<@${source}>: \`${query}\``;
 
 	return slackMessage;
 }
