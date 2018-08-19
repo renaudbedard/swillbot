@@ -239,7 +239,7 @@ const handler = async function(payload, res) {
 
         const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, slackUser, untappdUser, reviewInfo, beerInfo);
 
-		util.sendDelayedResponse(slackMessage);
+		util.sendDelayedResponse(slackMessage, payload.response_url);
     } catch (err) {
 		util.sendDelayedResponse(util.formatError(err), payload.response_url);
     }
