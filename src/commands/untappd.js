@@ -44,14 +44,15 @@ const handler = async function(payload, res) {
 			throw err;
 		};
 
+		// send receipt ASAP
+		res.status(200).json(util.formatReceipt());
+
 		const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim()))).catch(onErrorRethrow);
 		const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(onErrorRethrow);
 
-		res.set('content-type', 'application/json');
-		res.status(200).json(formatBeerInfoSlackMessage(beerInfos));
+		util.sendDelayedResponse(formatBeerInfoSlackMessage(beerInfos), payload.response_url);
 	} catch (err) {
-		res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError(err));
+		util.sendDelayedResponse(util.formatError(err), payload.response_url);
 	}
 };
 

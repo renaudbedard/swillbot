@@ -15,6 +15,32 @@ const untappdParams = {
 };
 
 /**
+ * Formats a receipt as a Slack message.
+ * @return {object} The Slack message
+ */
+function formatReceipt() {
+	let slackMessage = {
+		response_type: 'ephemeral',
+		text: 'Working... :hourglass_flowing_sand:',
+	};
+	return slackMessage;
+}
+
+/**
+ * @param {object} message The delayed response
+ * @param {string} responseUrl Slack's response URL
+ */
+function sendDelayedResponse(message, responseUrl) {
+	const args = {
+		data: message,
+		headers: {'Content-Type': 'application/json'}
+	};
+	restClient.post(responseUrl, args, function(data, response) {
+		//console.log(`Success!`);
+	});
+}
+
+/**
  * @param {object} client The PG client
  * @param {string} query The SQL query
  * @param {object[]} values Query values (optional)
@@ -131,5 +157,7 @@ module.exports = {
     searchForBeerId: searchForBeerId,
 	getBeerInfo: getBeerInfo,
 	tryPgQuery: tryPgQuery,
-	untappdParams: untappdParams
+	untappdParams: untappdParams,
+	formatReceipt: formatReceipt,
+	sendDelayedResponse: sendDelayedResponse
 };
