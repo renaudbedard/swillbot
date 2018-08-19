@@ -32,9 +32,10 @@ async function getUntappdUser(slackUserId) {
 /**
  * @param {string} userName The user to get checkins from
  * @param {int} beerId The beer ID to look for
+ * @param {string} beerName The beer name
  * @return {object[]} The Untappd checkins
  */
-async function findReview(userName, beerId) {
+async function findReview(userName, beerId, beerName) {
 	//console.log(`userName = ${userName}, beerId = ${beerId}`);
 
 	// DEBUG -- drop table
@@ -65,6 +66,14 @@ async function findReview(userName, beerId) {
 		// if there are no results, fill cache
 		console.log(`couldn't find beer id ${beerId} for username ${userName}, will cache user beers`);
 		reviewInfo = await findAndCacheUserBeers(userName, beerId);
+	}
+
+	if (reviewInfo == null) {
+		const error = {
+			source: `Looking for beer ID in checkins`,
+			message: `\`${userName}\` has not tried \`${beerName}\` yet!`,
+		};
+		throw error;
 	}
 
 	// separate request for the check-in comment
@@ -234,7 +243,7 @@ const handler = async function(payload, res) {
 
 		const [beerInfo, reviewInfo] = await Promise.all([
 			util.getBeerInfo(beerId),
-			findReview(untappdUser, beerId)
+			findReview(untappdUser, beerId, query)
 		]).catch(util.onErrorRethrow);
 
         const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, slackUser, untappdUser, reviewInfo, beerInfo);
