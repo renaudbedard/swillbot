@@ -6,14 +6,18 @@
 const util = require('../util');
 
 /**
+ * @param {string} source The user ID that made the request
+ * @param {string} query The original request
  * @param {object[]} beerInfos Untappd's beer info
  * @return {string} The rich slack message
  */
-function formatBeerInfoSlackMessage(beerInfos) {
+function formatBeerInfoSlackMessage(source, query, beerInfos) {
 	// See https://api.slack.com/docs/message-formatting
 	let slackMessage = {
 		response_type: 'in_channel',
-		attachments: []
+		attachments: [
+			{ text: `${source}: \`${query}\`` }
+		]
 	};
 
 	for (let beerInfo of beerInfos) {
@@ -40,17 +44,16 @@ function formatBeerInfoSlackMessage(beerInfos) {
 
 const handler = async function(payload, res) {
 	try {
+		res.status(200).json(util.formatReceipt());
+
 		const onErrorRethrow = err => {
 			throw err;
 		};
 
-		// send receipt ASAP
-		res.status(200).json(util.formatReceipt());
-
 		const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim()))).catch(onErrorRethrow);
 		const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(onErrorRethrow);
 
-		util.sendDelayedResponse(formatBeerInfoSlackMessage(beerInfos), payload.response_url);
+		util.sendDelayedResponse(formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos), payload.response_url);
 	} catch (err) {
 		util.sendDelayedResponse(util.formatError(err), payload.response_url);
 	}
