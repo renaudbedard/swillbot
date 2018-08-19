@@ -175,13 +175,15 @@ function getCheckinComment(checkinId) {
 }
 
 /**
+ * @param {string} source The user ID that made the request
+ * @param {string} query The original request
  * @param {string} slackUserId The Slack user ID
  * @param {string} untappdUser The Untappd user name
  * @param {object} reviewInfo Untappd review info
  * @param {object} beerInfo Untappd beer info
  * @return {object} The rich slack message
  */
-function formatReviewSlackMessage(slackUserId, untappdUser, reviewInfo, beerInfo) {
+function formatReviewSlackMessage(source, query, slackUserId, untappdUser, reviewInfo, beerInfo) {
 	// See https://api.slack.com/docs/message-formatting
 	let slackMessage = {
 		response_type: 'in_channel',
@@ -194,6 +196,7 @@ function formatReviewSlackMessage(slackUserId, untappdUser, reviewInfo, beerInfo
 		color: '#ffcc00',
 		title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
 		thumb_url: beerInfo.beer_label,
+		pretext: `<@${source}>: \`${query}\``,
 		text: `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? 's' : ''})`
 	};
 	if (beerInfo.brewery)
@@ -222,41 +225,23 @@ const handler = async function(payload, res) {
     }
 
     try {
-		const beerId = await util.searchForBeerId(query);
-		console.log(`found beer id : ${beerId}`);
+		res.status(200).json(util.formatReceipt());
 
-		const beerInfo = await util.getBeerInfo(beerId);
-		//console.log(`found beer info : ${JSON.stringify(beerInfo)}`);
+		const [beerId, untappdUser] = await Promise.all([
+			util.searchForBeerId(query),
+			getUntappdUser(slackUser)
+		]).catch(util.onErrorRethrow);
 
-		const untappdUser = await getUntappdUser(slackUser);
-		console.log(`found untappd user : ${untappdUser}`);
+		const [beerInfo, reviewInfo] = await Promise.all([
+			util.getBeerInfo(beerId),
+			findReview(untappdUser, beerId)
+		]).catch(util.onErrorRethrow);
 
-		const reviewInfo = await findReview(untappdUser, beerId);
-		console.log(`found review info : ${JSON.stringify(reviewInfo)}`);
+        const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, slackUser, untappdUser, reviewInfo, beerInfo);
 
-		/*
-		const onErrorRethrow = err => { throw err; };
-        const [beerInfo, asyncResult] = await Promise.all([
-            util.getBeerInfo(beerId),
-            async function() {
-				const u = await getUntappdUser(slackUser);
-				console.log(`found untappd user : ${u}`);
-				const ri = await findReview(u, beerId);
-				console.log(`found review info : ${ri}`);
-                return [u, ri];
-            }]
-		).catch(onErrorRethrow);
-		const untappdUser = asyncResult[0];
-		const reviewInfo = asyncResult[1];
-		*/
-
-        const slackMessage = formatReviewSlackMessage(slackUser, untappdUser, reviewInfo, beerInfo);
-
-        res.set('content-type', 'application/json');
-        res.status(200).json(slackMessage);
+		util.sendDelayedResponse(slackMessage);
     } catch (err) {
-		res.set('content-type', 'application/json');
-        res.status(200).json(util.formatError(err));
+		util.sendDelayedResponse(util.formatError(err), payload.response_url);
     }
 };
 

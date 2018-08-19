@@ -151,6 +151,13 @@ function getBeerInfo(beerId) {
 	});
 }
 
+/**
+ * @param {object} err Error data
+ */
+function onErrorRethrow(err) {
+	throw err;
+}
+
 module.exports = {
     getRatingString: getRatingString,
     formatError: formatError,
@@ -159,5 +166,6 @@ module.exports = {
 	tryPgQuery: tryPgQuery,
 	untappdParams: untappdParams,
 	formatReceipt: formatReceipt,
-	sendDelayedResponse: sendDelayedResponse
+	sendDelayedResponse: sendDelayedResponse,
+	onErrorRethrow: onErrorRethrow
 };

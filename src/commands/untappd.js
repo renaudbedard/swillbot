@@ -47,14 +47,11 @@ const handler = async function(payload, res) {
 	try {
 		res.status(200).json(util.formatReceipt());
 
-		const onErrorRethrow = err => {
-			throw err;
-		};
+		const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim()))).catch(util.onErrorRethrow);
+		const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(util.onErrorRethrow);
 
-		const beerIds = await Promise.all(payload.text.split(',').map(x => util.searchForBeerId(x.trim()))).catch(onErrorRethrow);
-		const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(onErrorRethrow);
-
-		util.sendDelayedResponse(formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos), payload.response_url);
+		const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
+		util.sendDelayedResponse(message, payload.response_url);
 	} catch (err) {
 		util.sendDelayedResponse(util.formatError(err), payload.response_url);
 	}
