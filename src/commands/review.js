@@ -124,6 +124,15 @@ async function findAndCacheUserBeers(userName, beerId) {
       const res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
 
       totalCount = res.data.response.total_count;
+
+      if (!res.data.response.beers) {
+        const err = {
+          source: `Find beer reviews for user ${userName} and beer ID ${beerId}`,
+          message: "API limit busted! Sorry, wait an hour before trying again."
+        };
+        throw err;
+      }
+
       batchCount = res.data.response.beers.items.length;
       for (let item of res.data.response.beers.items) {
         await util.tryPgQuery(
