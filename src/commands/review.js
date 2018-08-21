@@ -13,13 +13,7 @@ const pgPool = require("../pg-pool");
  * @return {Promise<string[]>} The Untappd users
  */
 async function getUntappdUsers() {
-  const result = await util.tryPgQuery(
-    null,
-    `select untappd_username from user_mapping`,
-    [slackUserId],
-    `Find Untappd username from Slack ID '${slackUserId}'`
-  );
-
+  const result = await util.tryPgQuery(null, `select untappd_username from user_mapping`, null, `Fetch all Untappd usernames`);
   return result.rows.map(x => x.untappd_username);
 }
 
@@ -270,10 +264,8 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    if (slackUser == null) untappdUsers = getUntappdUsers();
-    else untappdUsers = [getUntappdUser(slackUser)];
-
-    console.log(untappdUsers);
+    if (slackUser == null) untappdUsers = await getUntappdUsers();
+    else untappdUsers = [await getUntappdUser(slackUser)];
 
     const beerId = await util.searchForBeerId(query);
     const beerInfo = await util.getBeerInfo(beerId);
