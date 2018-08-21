@@ -230,6 +230,11 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
   else attachment.title = `${beerInfo.beer_name}`;
 
   for (let i = 0; i < users.length; i++) {
+    if (i > 0) {
+      slackMessage.attachments.push(attachment);
+      attachment = { color: "#ffcc00", text: "" };
+    }
+
     const untappdUser = users[i];
     const reviewInfo = reviews[i];
     const ratingString = util.getRatingString(reviewInfo.rating);
@@ -240,9 +245,8 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     const date = reviewInfo.recent_checkin_timestamp;
     const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
 
-    attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>\n\n`;
+    attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
   }
-  attachment.text = attachment.text.trim();
 
   slackMessage.attachments.push(attachment);
 
