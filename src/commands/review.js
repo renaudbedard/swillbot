@@ -261,6 +261,7 @@ const handler = async function(payload, res) {
   // look for special tags
   if (payload.text.indexOf("<!channel>") > 0 || payload.text.indexOf("<!everyone>") > 0 || payload.text.indexOf("<!here>") > 0) {
     slackUser = null;
+    query = payload.text.slice(payload.text.indexOf(" ")).trim();
   } else if (payload.text.indexOf("@") > 0) {
     slackUser = payload.text.slice(payload.text.indexOf("@") + 1, payload.text.indexOf("|"));
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
