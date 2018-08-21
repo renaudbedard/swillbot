@@ -1,19 +1,10 @@
 {
-    "extends": "google",
-    "parserOptions": {
-        "ecmaVersion": 2017
-    },
-    "rules":{
-        "linebreak-style": 0,
-        "no-tabs": 0,
-        "comma-dangle": 0,
-        "max-len": 0,
-        "curly": 0,
-        "spaced-comment": 0,
-        "no-undef": 1,
-        "no-unused-vars": 1,
-        "arrow-parens": 0,
-        "object-curly-spacing": 0,
-        "block-spacing": 0
-    }
+  "parserOptions": {
+    "ecmaVersion": 9
+  },
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": "error"
+  },
+  "extends": ["plugin:prettier/recommended"]
 }

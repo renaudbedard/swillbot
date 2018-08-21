@@ -1,12 +1,12 @@
 /* global require */
 /* global module */
 /* global process */
-'use strict';
+"use strict";
 
-const dotenv = require('dotenv');
-const ENV = process.env.NODE_ENV || 'development';
+const dotenv = require("dotenv");
+const ENV = process.env.NODE_ENV || "development";
 
-if (ENV === 'development') dotenv.load();
+if (ENV === "development") dotenv.load();
 
 const config = {
   ENV: process.env.NODE_ENV,
