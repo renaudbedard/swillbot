@@ -223,14 +223,16 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
   if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
   else attachment.title = `${beerInfo.beer_name}`;
 
+  let skipAttachment = false;
   for (let i = 0; i < users.length; i++) {
-    if (i > 0) {
-      if (attachment != null) slackMessage.attachments.push(attachment);
+    if (i > 0 && !skipAttachment) {
+      slackMessage.attachments.push(attachment);
       attachment = { color: "#ffcc00", text: "" };
+      skipAttachment = false;
     }
 
     if (reviews[i] == null) {
-      attachment = null;
+      skipAttachment = true;
       continue;
     }
 
@@ -247,7 +249,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
   }
 
-  slackMessage.attachments.push(attachment);
+  if (!skipAttachment) slackMessage.attachments.push(attachment);
 
   return slackMessage;
 }
