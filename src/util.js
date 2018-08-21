@@ -111,11 +111,7 @@ function searchForBeerId(query) {
 
     let req = restClient.get("https://api.untappd.com/v4/search/beer", args, function(data, _) {
       let firstResult =
-        data.response.beers.count > 0
-          ? data.response.beers.items[0]
-          : data.response.homebrew.count > 0
-            ? data.response.homebrew.items[0]
-            : null;
+        data.response.beers.count > 0 ? data.response.beers.items[0] : data.response.homebrew.count > 0 ? data.response.homebrew.items[0] : null;
       if (firstResult) {
         //console.log(`beer id : ${firstResult.beer.bid}`);
         resolve(firstResult.beer.bid);

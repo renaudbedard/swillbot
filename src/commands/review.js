@@ -118,10 +118,7 @@ async function findAndCacheUserBeers(userName, beerId) {
       args.parameters.offset = cursor;
 
       // TODO: error handling?
-      const res = await restClient.getPromise(
-        "https://api.untappd.com/v4/user/beers/${userName}",
-        args
-      );
+      const res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
 
       totalCount = res.data.response.total_count;
       batchCount = res.data.response.beers.items.length;
@@ -133,14 +130,7 @@ async function findAndCacheUserBeers(userName, beerId) {
 					values ($1, $2, $3, $4, $5, $6)
 					on conflict (username, beer_id) do update set 
 					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6;`,
-          [
-            userName,
-            item.beer.bid,
-            item.recent_checkin_id,
-            new Date(item.recent_created_at),
-            item.count,
-            item.rating_score
-          ],
+          [userName, item.beer.bid, item.recent_checkin_id, new Date(item.recent_created_at), item.count, item.rating_score],
           `Add user review for user ${userName} and beer ID ${item.beer.bid}`
         );
 
@@ -186,10 +176,7 @@ function getCheckinComment(checkinId) {
       path: { checkinId: checkinId },
       parameters: util.untappdParams
     };
-    let req = restClient.get("https://api.untappd.com/v4/checkin/view/${checkinId}", args, function(
-      data,
-      _
-    ) {
+    let req = restClient.get("https://api.untappd.com/v4/checkin/view/${checkinId}", args, function(data, _) {
       if (!data.response.checkin) {
         console.log(data.response);
         reject({
@@ -232,17 +219,14 @@ function formatReviewSlackMessage(source, query, slackUserId, untappdUser, revie
     pretext: `<@${source}>: \`/review ${query}\``,
     text: `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`
   };
-  if (beerInfo.brewery)
-    attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+  if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
   else attachment.title = `${beerInfo.beer_name}`;
 
   attachment.text += `\n${reviewInfo.checkin_comment}`;
 
   const date = reviewInfo.recent_checkin_timestamp;
   const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-  attachment.text += `\n\t- <@${slackUserId}>, <https://untappd.com/user/${untappdUser}/checkin/${
-    reviewInfo.recent_checkin_id
-  }|${dateString}>`;
+  attachment.text += `\n\t- <@${slackUserId}>, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
 
   slackMessage.attachments.push(attachment);
 
@@ -263,24 +247,11 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    const [beerId, untappdUser] = await Promise.all([
-      util.searchForBeerId(query),
-      getUntappdUser(slackUser)
-    ]).catch(util.onErrorRethrow);
+    const [beerId, untappdUser] = await Promise.all([util.searchForBeerId(query), getUntappdUser(slackUser)]).catch(util.onErrorRethrow);
 
-    const [beerInfo, reviewInfo] = await Promise.all([
-      util.getBeerInfo(beerId),
-      findReview(untappdUser, beerId, query)
-    ]).catch(util.onErrorRethrow);
+    const [beerInfo, reviewInfo] = await Promise.all([util.getBeerInfo(beerId), findReview(untappdUser, beerId, query)]).catch(util.onErrorRethrow);
 
-    const slackMessage = formatReviewSlackMessage(
-      payload.user_id,
-      payload.text,
-      slackUser,
-      untappdUser,
-      reviewInfo,
-      beerInfo
-    );
+    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, slackUser, untappdUser, reviewInfo, beerInfo);
 
     util.sendDelayedResponse(slackMessage, payload.response_url);
   } catch (err) {

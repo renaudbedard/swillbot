@@ -28,9 +28,7 @@ for (let command of commands) {
     let payload = req.body;
 
     if (!payload || payload.token !== config.SLACK_TOKEN) {
-      let err =
-        "✋  An invalid slash token was provided\n" +
-        "   Is your Slack slash token correctly configured?";
+      let err = "✋  An invalid slash token was provided\n" + "   Is your Slack slash token correctly configured?";
       console.log(err);
       res.status(401).end(err);
       return;
