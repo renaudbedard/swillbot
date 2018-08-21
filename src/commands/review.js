@@ -85,13 +85,7 @@ async function findReview(userName, beerId, beerName) {
     reviewInfo = await findAndCacheUserBeers(userName, beerId);
   }
 
-  if (reviewInfo == null) {
-    const error = {
-      source: `Looking for beer ID in checkins`,
-      message: `\`${userName}\` has not tried \`${beerName}\` yet!`
-    };
-    throw error;
-  }
+  if (reviewInfo == null) return null;
 
   // separate request for the check-in comment
   reviewInfo.checkin_comment = await getCheckinComment(reviewInfo.recent_checkin_id);
@@ -231,8 +225,13 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
   for (let i = 0; i < users.length; i++) {
     if (i > 0) {
-      slackMessage.attachments.push(attachment);
+      if (attachment != null) slackMessage.attachments.push(attachment);
       attachment = { color: "#ffcc00", text: "" };
+    }
+
+    if (reviews[i] == null) {
+      attachment = null;
+      continue;
     }
 
     const untappdUser = users[i];
@@ -278,6 +277,14 @@ const handler = async function(payload, res) {
     const beerInfo = await util.getBeerInfo(beerId);
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query))).catch(util.onErrorRethrow);
+
+    if (reviews.all(x => x == null)) {
+      const error = {
+        source: `Looking for beer ID in checkins`,
+        message: `Requested users have not tried \`${beerInfo.beer_name}\` yet!`
+      };
+      throw error;
+    }
 
     //console.log(untappdUsers);
     //console.log(reviews);
