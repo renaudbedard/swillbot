@@ -218,31 +218,33 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     attachments: []
   };
 
+  let attachment = {
+    color: "#ffcc00",
+    title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
+    thumb_url: beerInfo.beer_label,
+    pretext: `<@${source}>: \`/review ${query}\``,
+    text: ""
+  };
+
+  if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+  else attachment.title = `${beerInfo.beer_name}`;
+
   for (let i = 0; i < users.length; i++) {
     const untappdUser = users[i];
     const reviewInfo = reviews[i];
-
     const ratingString = util.getRatingString(reviewInfo.rating);
 
-    let attachment = {
-      color: "#ffcc00",
-      title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
-      thumb_url: beerInfo.beer_label,
-      text: `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`
-    };
-    if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
-    else attachment.title = `${beerInfo.beer_name}`;
-
+    attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
     attachment.text += `\n${reviewInfo.checkin_comment}`;
 
     const date = reviewInfo.recent_checkin_timestamp;
     const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-    attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
 
-    slackMessage.attachments.push(attachment);
+    attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>\n\n`;
   }
+  attachment.text = attachment.text.trim();
 
-  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/review ${query}\``;
+  slackMessage.attachments.push(attachment);
 
   return slackMessage;
 }
