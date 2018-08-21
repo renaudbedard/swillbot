@@ -14,7 +14,7 @@ const pgPool = require("../pg-pool");
  */
 async function getUntappdUsers() {
   const result = await util.tryPgQuery(null, `select untappd_username from user_mapping`, null, `Fetch all Untappd usernames`);
-  console.log(`found ${result.rows.length} users`);
+  //console.log(`found ${result.rows.length} users`);
   return result.rows.map(x => x.untappd_username);
 }
 
@@ -253,11 +253,11 @@ const handler = async function(payload, res) {
   let query = payload.text;
 
   // look for special tags
-  if (payload.text.indexOf("<!channel>") > 0 || payload.text.indexOf("<!everyone>") > 0 || payload.text.indexOf("<!here>") > 0) {
-    console.log("found multi-user tag");
+  if (payload.text.indexOf("<!channel>") > -1 || payload.text.indexOf("<!everyone>") > -1 || payload.text.indexOf("<!here>") > -1) {
+    //console.log("found multi-user tag");
     slackUser = null;
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
-  } else if (payload.text.indexOf("@") > 0) {
+  } else if (payload.text.indexOf("@") > -1) {
     slackUser = payload.text.slice(payload.text.indexOf("@") + 1, payload.text.indexOf("|"));
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
   }
@@ -273,8 +273,8 @@ const handler = async function(payload, res) {
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query))).catch(util.onErrorRethrow);
 
-    console.log(untappdUsers);
-    console.log(reviews);
+    //console.log(untappdUsers);
+    //console.log(reviews);
 
     const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, untappdUsers, reviews, beerInfo);
 
