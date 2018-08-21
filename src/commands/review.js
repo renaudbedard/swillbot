@@ -278,7 +278,7 @@ const handler = async function(payload, res) {
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query))).catch(util.onErrorRethrow);
 
-    if (reviews.all(x => x == null)) {
+    if (reviews.every(x => x == null)) {
       const error = {
         source: `Looking for beer ID in checkins`,
         message: `Requested users have not tried \`${beerInfo.beer_name}\` yet!`
