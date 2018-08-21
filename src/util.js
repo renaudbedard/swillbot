@@ -98,6 +98,7 @@ function formatError(err) {
  */
 function searchForBeerId(query) {
   //console.log(`query : ${query}`);
+  const context = `Search for beer '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
       parameters: _.defaults(
@@ -110,6 +111,13 @@ function searchForBeerId(query) {
     };
 
     let req = restClient.get("https://api.untappd.com/v4/search/beer", args, function(data, _) {
+      if (!data.response.beers) {
+        reject({
+          source: context,
+          message: "API limit busted! Sorry, wait an hour before trying again."
+        });
+        return;
+      }
       let firstResult =
         data.response.beers.count > 0 ? data.response.beers.items[0] : data.response.homebrew.count > 0 ? data.response.homebrew.items[0] : null;
       if (firstResult) {
@@ -117,13 +125,13 @@ function searchForBeerId(query) {
         resolve(firstResult.beer.bid);
       } else
         reject({
-          source: `Search for beer '${query}'`,
+          source: context,
           message: "Couldn't find matching beer!"
         });
     });
 
     req.on("error", function(err) {
-      reject({ source: `Search for beer '${query}'`, message: err.toString() });
+      reject({ source: context, message: err.toString() });
     });
   });
 }
@@ -133,6 +141,7 @@ function searchForBeerId(query) {
  * @return {Promise<object>} The Untapped data for this beer
  */
 function getBeerInfo(beerId) {
+  const context = `Get beer info for beer #${beerId}`;
   return new Promise((resolve, reject) => {
     let args = {
       path: {
@@ -148,12 +157,19 @@ function getBeerInfo(beerId) {
 
     let req = restClient.get("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
       //console.log(`beer info : ${data.response.beer}`);
+      if (!data.response.beer) {
+        reject({
+          source: context,
+          message: "API limit busted! Sorry, wait an hour before trying again."
+        });
+        return;
+      }
       resolve(data.response.beer);
     });
 
     req.on("error", function(err) {
       reject({
-        source: `Get beer info for beer #${beerId}`,
+        source: context,
         message: err.toString()
       });
     });

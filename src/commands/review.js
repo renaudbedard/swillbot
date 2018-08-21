@@ -50,8 +50,8 @@ async function getUntappdUser(slackUserId) {
 async function findReview(userName, beerId, beerName) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
-  // DEBUG -- drop table
-  //await util.tryPgQuery(null, 'drop table user_reviews', null, 'Debug drop');
+  // DEBUG DROP
+  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
@@ -62,7 +62,8 @@ async function findReview(userName, beerId, beerName) {
 		recent_checkin_id integer,
 		recent_checkin_timestamp date,
 		count integer,
-		rating real,
+    rating real,
+    order integer,
 		primary key (username, beer_id));`,
     null,
     "Create user reviews table"
@@ -78,9 +79,10 @@ async function findReview(userName, beerId, beerName) {
   );
 
   let reviewInfo;
-  if (result.rows.length == 1) reviewInfo = result.rows[0];
-  else {
-    // if there are no results, fill cache
+  if (result.rows.length == 1) {
+    // TODO: force-recache the batch around that review's order
+    reviewInfo = result.rows[0];
+  } else {
     console.log(`couldn't find beer id ${beerId} for username ${userName}, will cache user beers`);
     reviewInfo = await findAndCacheUserBeers(userName, beerId);
   }
@@ -115,12 +117,14 @@ async function findAndCacheUserBeers(userName, beerId) {
       parameters: _.defaults({ limit: limit }, util.untappdParams)
     };
 
+    // TODO: get the total count with a simple limit=1 request
+    // TODO: add support for force-recaching based on a starting offset (offset = total_count - order - batchCount / 2)
+
     pgClient.query("BEGIN;");
 
     for (let cursor = 0; cursor < totalCount; cursor += batchCount) {
       args.parameters.offset = cursor;
 
-      // TODO: error handling?
       const res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
 
       totalCount = res.data.response.total_count;
@@ -135,6 +139,10 @@ async function findAndCacheUserBeers(userName, beerId) {
 
       batchCount = res.data.response.beers.items.length;
       for (let item of res.data.response.beers.items) {
+        // TODO: stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
+        //       (unless we're force-recaching)
+
+        // TODO: store order (original offset + upsertedCount)
         await util.tryPgQuery(
           pgClient,
           `insert into user_reviews (
@@ -149,6 +157,8 @@ async function findAndCacheUserBeers(userName, beerId) {
         //console.log(`upserted beer id ${item.beer.bid}`);
         upsertedCount++;
 
+        // TODO: only stop when finding if it's a force-recaching request
+        //       otherwise, we're going to the end (or up to last_review_fetch_timestamp)
         if (item.beer.bid == beerId) {
           console.log(`found!`);
           // mock a database result (faster than selecting it back)
@@ -163,17 +173,22 @@ async function findAndCacheUserBeers(userName, beerId) {
           break;
         }
       }
+      // TODO: see above
       if (beerData != null) break;
     }
 
     pgClient.query("COMMIT;");
     console.log(`upserted ${upsertedCount} rows`);
+
+    // TODO: fetch back from database if it wasn't stored
   } catch (err) {
     pgClient.query("ROLLBACK;");
     throw err;
   } finally {
     pgClient.release();
   }
+
+  // TODO: if we're not force-recaching, insert last fetch date into user_mapping
 
   return beerData;
 }
