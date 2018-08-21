@@ -205,13 +205,12 @@ function getCheckinComment(checkinId) {
 /**
  * @param {string} source The user ID that made the request
  * @param {string} query The original request
- * @param {string} slackUserId The Slack user ID
  * @param {string} users The Untappd users
  * @param {object} reviews Untappd reviews
  * @param {object} beerInfo Untappd beer info
  * @return {object} The rich slack message
  */
-function formatReviewSlackMessage(source, query, slackUserId, users, reviews, beerInfo) {
+function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -237,7 +236,7 @@ function formatReviewSlackMessage(source, query, slackUserId, users, reviews, be
 
     const date = reviewInfo.recent_checkin_timestamp;
     const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-    attachment.text += `\n\t- <@${slackUserId}>, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
+    attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
 
     slackMessage.attachments.push(attachment);
   }
@@ -272,7 +271,10 @@ const handler = async function(payload, res) {
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query))).catch(util.onErrorRethrow);
 
-    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, slackUser, untappdUsers, reviews, beerInfo);
+    console.log(untappdUsers);
+    console.log(reviews);
+
+    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, untappdUsers, reviews, beerInfo);
 
     util.sendDelayedResponse(slackMessage, payload.response_url);
   } catch (err) {
