@@ -271,7 +271,9 @@ const handler = async function(payload, res) {
     res.status(200).json(util.formatReceipt());
 
     if (slackUser == null) untappdUsers = getUntappdUsers();
-    else untappdUsers = getUntappdUser(slackUser);
+    else untappdUsers = [getUntappdUser(slackUser)];
+
+    console.log(untappdUsers);
 
     const beerId = await util.searchForBeerId(query);
     const beerInfo = await util.getBeerInfo(beerId);
