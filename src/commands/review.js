@@ -205,7 +205,7 @@ function formatReviewSlackMessage(source, query, slackUserId, untappdUser, revie
 		color: '#ffcc00',
 		title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
 		thumb_url: beerInfo.beer_label,
-		pretext: `<@${source}>: \`${query}\``,
+		pretext: `<@${source}>: /review \`${query}\``,
 		text: `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? 's' : ''})`
 	};
 	if (beerInfo.brewery)
