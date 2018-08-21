@@ -14,6 +14,7 @@ const pgPool = require("../pg-pool");
  */
 async function getUntappdUsers() {
   const result = await util.tryPgQuery(null, `select untappd_username from user_mapping`, null, `Fetch all Untappd usernames`);
+  console.log(`found ${result.rows.length} users`);
   return result.rows.map(x => x.untappd_username);
 }
 
@@ -253,6 +254,7 @@ const handler = async function(payload, res) {
 
   // look for special tags
   if (payload.text.indexOf("<!channel>") > 0 || payload.text.indexOf("<!everyone>") > 0 || payload.text.indexOf("<!here>") > 0) {
+    console.log("found multi-user tag");
     slackUser = null;
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
   } else if (payload.text.indexOf("@") > 0) {
