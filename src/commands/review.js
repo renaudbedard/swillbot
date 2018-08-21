@@ -10,6 +10,20 @@ const _ = require("lodash");
 const pgPool = require("../pg-pool");
 
 /**
+ * @return {Promise<string[]>} The Untappd users
+ */
+async function getUntappdUsers() {
+  const result = await util.tryPgQuery(
+    null,
+    `select untappd_username from user_mapping`,
+    [slackUserId],
+    `Find Untappd username from Slack ID '${slackUserId}'`
+  );
+
+  return result.rows.map(x => x.untappd_username);
+}
+
+/**
  * @param {string} slackUserId The Slack user's ID
  * @return {Promise<string>} The Untappd user name
  */
@@ -198,48 +212,56 @@ function getCheckinComment(checkinId) {
  * @param {string} source The user ID that made the request
  * @param {string} query The original request
  * @param {string} slackUserId The Slack user ID
- * @param {string} untappdUser The Untappd user name
- * @param {object} reviewInfo Untappd review info
+ * @param {string} users The Untappd users
+ * @param {object} reviews Untappd reviews
  * @param {object} beerInfo Untappd beer info
  * @return {object} The rich slack message
  */
-function formatReviewSlackMessage(source, query, slackUserId, untappdUser, reviewInfo, beerInfo) {
+function formatReviewSlackMessage(source, query, slackUserId, users, reviews, beerInfo) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
     attachments: []
   };
 
-  const ratingString = util.getRatingString(reviewInfo.rating);
+  for (let i = 0; i < users.length; i++) {
+    const untappdUser = users[i];
+    const reviewInfo = reviews[i];
 
-  let attachment = {
-    color: "#ffcc00",
-    title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
-    thumb_url: beerInfo.beer_label,
-    pretext: `<@${source}>: \`/review ${query}\``,
-    text: `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`
-  };
-  if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
-  else attachment.title = `${beerInfo.beer_name}`;
+    const ratingString = util.getRatingString(reviewInfo.rating);
 
-  attachment.text += `\n${reviewInfo.checkin_comment}`;
+    let attachment = {
+      color: "#ffcc00",
+      title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
+      thumb_url: beerInfo.beer_label,
+      text: `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`
+    };
+    if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+    else attachment.title = `${beerInfo.beer_name}`;
 
-  const date = reviewInfo.recent_checkin_timestamp;
-  const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-  attachment.text += `\n\t- <@${slackUserId}>, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
+    attachment.text += `\n${reviewInfo.checkin_comment}`;
 
-  slackMessage.attachments.push(attachment);
+    const date = reviewInfo.recent_checkin_timestamp;
+    const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+    attachment.text += `\n\t- <@${slackUserId}>, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
+
+    slackMessage.attachments.push(attachment);
+  }
+
+  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/review ${query}\``;
 
   return slackMessage;
 }
 
 const handler = async function(payload, res) {
   let slackUser = payload.user_id;
+  let untappdUsers = [];
   let query = payload.text;
 
-  console.log(query);
-
-  if (payload.text.indexOf("@") > 0) {
+  // look for special tags
+  if (payload.text.indexOf("<!channel>") > 0 || payload.text.indexOf("<!everyone>") > 0 || payload.text.indexOf("<!here>") > 0) {
+    slackUser = null;
+  } else if (payload.text.indexOf("@") > 0) {
     slackUser = payload.text.slice(payload.text.indexOf("@") + 1, payload.text.indexOf("|"));
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
   }
@@ -247,11 +269,15 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    const [beerId, untappdUser] = await Promise.all([util.searchForBeerId(query), getUntappdUser(slackUser)]).catch(util.onErrorRethrow);
+    if (slackUser == null) untappdUsers = getUntappdUsers();
+    else untappdUsers = getUntappdUser(slackUser);
 
-    const [beerInfo, reviewInfo] = await Promise.all([util.getBeerInfo(beerId), findReview(untappdUser, beerId, query)]).catch(util.onErrorRethrow);
+    const beerId = await util.searchForBeerId(query);
+    const beerInfo = await util.getBeerInfo(beerId);
 
-    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, slackUser, untappdUser, reviewInfo, beerInfo);
+    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query))).catch(util.onErrorRethrow);
+
+    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, slackUser, untappdUsers, reviews, beerInfo);
 
     util.sendDelayedResponse(slackMessage, payload.response_url);
   } catch (err) {
