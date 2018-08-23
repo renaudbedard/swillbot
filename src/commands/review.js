@@ -165,7 +165,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
       }
 
       batchCount = res.data.response.beers.items.length;
-      for (let item of res.data.response.beers.items) {
+      for (let i = 0; i < batchCount; i++) {
+        const item = res.data.response.beers.items[i];
         const recentCheckinTimestamp = new Date(item.recent_created_at);
 
         // stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
@@ -178,7 +179,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           break;
         }
 
-        const currentRank = totalCount - cursor;
+        const currentRank = totalCount - cursor - i;
         await util.tryPgQuery(
           pgClient,
           `insert into user_reviews (
