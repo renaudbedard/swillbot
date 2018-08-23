@@ -63,7 +63,7 @@ async function findReview(userInfo, beerId, beerName) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
-  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
+  await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
@@ -182,8 +182,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         await util.tryPgQuery(
           pgClient,
           `insert into user_reviews (
-					username, beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating) 
-					values ($1, $2, $3, $4, $5, $6)
+					username, beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
+					values ($1, $2, $3, $4, $5, $6, $7)
 					on conflict (username, beer_id) do update set 
 					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6, rank = $7;`,
           [userInfo.name, item.beer.bid, item.recent_checkin_id, recentCheckinTimestamp, item.count, item.rating_score, currentRank],
