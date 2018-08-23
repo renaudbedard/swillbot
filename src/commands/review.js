@@ -63,7 +63,7 @@ async function findReview(userInfo, beerId, beerName) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
-  await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
+  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
@@ -158,7 +158,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
 
       if (!res.data.response.beers) {
         const err = {
-          source: `Find beer reviews for user ${userName} and beer ID ${beerId}`,
+          source: `Find beer reviews for user ${userInfo.name} and beer ID ${beerId}`,
           message: "API limit busted! Sorry, wait an hour before trying again."
         };
         throw err;
@@ -186,8 +186,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
 					values ($1, $2, $3, $4, $5, $6)
 					on conflict (username, beer_id) do update set 
 					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6, rank = $7;`,
-          [userName, item.beer.bid, item.recent_checkin_id, recentCheckinTimestamp, item.count, item.rating_score, currentRank],
-          `Add user review for user ${userName} and beer ID ${item.beer.bid}`
+          [userInfo.name, item.beer.bid, item.recent_checkin_id, recentCheckinTimestamp, item.count, item.rating_score, currentRank],
+          `Add user review for user ${userInfo.name} and beer ID ${item.beer.bid}`
         );
 
         //console.log(`upserted beer id ${item.beer.bid}`);
@@ -197,7 +197,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           console.log(`found! (will continue)`);
           // mock a database result (faster than selecting it back)
           beerData = {
-            username: userName,
+            username: userInfo.name,
             beer_id: item.beer.bid,
             recent_checkin_id: item.recent_checkin_id,
             recent_checkin_timestamp: recentCheckinTimestamp,
