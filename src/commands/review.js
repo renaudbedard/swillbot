@@ -63,7 +63,7 @@ async function findReview(userInfo, beerId, beerName) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
-  await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
+  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
