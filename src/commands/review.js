@@ -10,23 +10,32 @@ const _ = require("lodash");
 const pgPool = require("../pg-pool");
 
 /**
- * @return {Promise<string[]>} The Untappd users
+ * @return {Promise<any[]>} All registered Untappd users' info
  */
 async function getUntappdUsers() {
-  const result = await util.tryPgQuery(null, `select untappd_username from user_mapping`, null, `Fetch all Untappd usernames`);
+  const result = await util.tryPgQuery(
+    null,
+    `select untappd_username, last_review_fetch_timestamp 
+    from user_mapping`,
+    null,
+    `Fetch all Untappd usernames`
+  );
   //console.log(`found ${result.rows.length} users`);
-  return result.rows.map(x => x.untappd_username);
+  return result.rows.map(x => {
+    return { name: x.untappd_username, lastReviewFetchTimestamp: x.last_review_fetch_timestamp };
+  });
 }
 
 /**
  * @param {string} slackUserId The Slack user's ID
- * @return {Promise<string>} The Untappd user name
+ * @return {Promise<any>} The Untappd user info
  */
 async function getUntappdUser(slackUserId) {
   const result = await util.tryPgQuery(
     null,
-    `select untappd_username from user_mapping
-        where slack_user_id = $1`,
+    `select untappd_username, last_review_fetch_timestamp 
+    from user_mapping 
+    where slack_user_id = $1`,
     [slackUserId],
     `Find Untappd username from Slack ID '${slackUserId}'`
   );
@@ -38,20 +47,23 @@ async function getUntappdUser(slackUserId) {
     };
     throw err;
   }
-  return result.rows[0].untappd_username;
+  return {
+    name: result.rows[0].untappd_username,
+    lastReviewFetchTimestamp: result.rows[0].last_review_fetch_timestamp
+  };
 }
 
 /**
- * @param {string} userName The user to get checkins from
+ * @param {string} userInfo The user to get checkins from
  * @param {int} beerId The beer ID to look for
  * @param {string} beerName The beer name
  * @return {object[]} The Untappd checkins
  */
-async function findReview(userName, beerId, beerName) {
+async function findReview(userInfo, beerId, beerName) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
-  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
+  await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
@@ -63,7 +75,7 @@ async function findReview(userName, beerId, beerName) {
 		recent_checkin_timestamp date,
 		count integer,
     rating real,
-    order integer,
+    rank integer,
 		primary key (username, beer_id));`,
     null,
     "Create user reviews table"
@@ -72,19 +84,21 @@ async function findReview(userName, beerId, beerName) {
   // look in cache first
   const result = await util.tryPgQuery(
     null,
-    `select * from user_reviews
-        where username = $1 and beer_id = $2`,
-    [userName, beerId],
-    `Find beer reviews for user ${userName} and beer ID ${beerId}`
+    `select * 
+    from user_reviews 
+    where username = $1 and beer_id = $2`,
+    [userInfo.name, beerId],
+    `Find beer reviews for user ${userInfo.name} and beer ID ${beerId}`
   );
 
   let reviewInfo;
   if (result.rows.length == 1) {
-    // TODO: force-recache the batch around that review's order
-    reviewInfo = result.rows[0];
+    // force-recache the batch around that review's rank
+    console.log(`found the beer check-in; will force-recache`);
+    reviewInfo = await findAndCacheUserBeers(userInfo, beerId, result.rows[0].rank);
   } else {
-    console.log(`couldn't find beer id ${beerId} for username ${userName}, will cache user beers`);
-    reviewInfo = await findAndCacheUserBeers(userName, beerId);
+    console.log(`could not find the beer check-in; will fetch`);
+    reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
   }
 
   if (reviewInfo == null) return null;
@@ -96,38 +110,51 @@ async function findReview(userName, beerId, beerName) {
 }
 
 /**
- * @param {string} userName The user to get unique beers from
- * @param {int} beerId The beer ID to stop at
+ * @param {string} userInfo The user to get unique beers from
+ * @param {number} beerId The beer ID to stop at
+ * @param {number=} fetchRank The ordinal rank of the beer in this user's unique beers
  * @return {Promise<object>} The review entity
  */
-async function findAndCacheUserBeers(userName, beerId) {
+async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
   const pgClient = await pgPool.connect();
 
   let beerData = null;
 
-  // make sure the table exists
+  const args = {
+    path: { userName: userInfo.name },
+    parameters: _.cloneDeep(util.untappdParams)
+  };
+
   try {
+    // get the total count with a simple limit=1 request
+    args.parameters.limit = 1;
+    let res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
+    const totalCount = res.data.response.total_count;
+
+    console.log(`total count: ${totalCount}`);
+
     const limit = 50;
+    args.parameters.limit = limit;
+
     let batchCount = 0;
-    let totalCount = 50;
     let upsertedCount = 0;
+    let initialOffset = 0;
+    let stopAtOffset = totalCount;
 
-    const args = {
-      path: { userName: userName },
-      parameters: _.defaults({ limit: limit }, util.untappdParams)
-    };
-
-    // TODO: get the total count with a simple limit=1 request
-    // TODO: add support for force-recaching based on a starting offset (offset = total_count - order - batchCount / 2)
+    // set initial & stopping offset if we're looking for a specific rank
+    if (fetchRank != undefined) {
+      initialOffset = totalCount - fetchRank - limit / 2;
+      stopAtOffset = initialOffset + limit;
+      console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
+    }
 
     pgClient.query("BEGIN;");
 
-    for (let cursor = 0; cursor < totalCount; cursor += batchCount) {
+    let aborted = false;
+    for (let cursor = initialOffset; cursor < stopAtOffset; cursor += batchCount) {
       args.parameters.offset = cursor;
 
-      const res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
-
-      totalCount = res.data.response.total_count;
+      res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
 
       if (!res.data.response.beers) {
         const err = {
@@ -139,48 +166,51 @@ async function findAndCacheUserBeers(userName, beerId) {
 
       batchCount = res.data.response.beers.items.length;
       for (let item of res.data.response.beers.items) {
-        // TODO: stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
-        //       (unless we're force-recaching)
+        const recentCheckinTimestamp = new Date(item.recent_created_at);
 
-        // TODO: store order (original offset + upsertedCount)
+        // stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
+        // (unless we're force-recaching)
+        if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
+          console.log(
+            `stopped fetching; current item was checked in at ${recentCheckinTimestamp} but we last fetched at ${userInfo.lastReviewFetchTimestamp}`
+          );
+          aborted = true;
+          break;
+        }
+
+        const currentRank = totalCount - cursor;
         await util.tryPgQuery(
           pgClient,
           `insert into user_reviews (
 					username, beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating) 
 					values ($1, $2, $3, $4, $5, $6)
 					on conflict (username, beer_id) do update set 
-					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6;`,
-          [userName, item.beer.bid, item.recent_checkin_id, new Date(item.recent_created_at), item.count, item.rating_score],
+					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6, rank = $7;`,
+          [userName, item.beer.bid, item.recent_checkin_id, recentCheckinTimestamp, item.count, item.rating_score, currentRank],
           `Add user review for user ${userName} and beer ID ${item.beer.bid}`
         );
 
         //console.log(`upserted beer id ${item.beer.bid}`);
         upsertedCount++;
 
-        // TODO: only stop when finding if it's a force-recaching request
-        //       otherwise, we're going to the end (or up to last_review_fetch_timestamp)
         if (item.beer.bid == beerId) {
-          console.log(`found!`);
+          console.log(`found! (will continue)`);
           // mock a database result (faster than selecting it back)
           beerData = {
             username: userName,
             beer_id: item.beer.bid,
             recent_checkin_id: item.recent_checkin_id,
-            recent_checkin_timestamp: new Date(item.recent_created_at),
+            recent_checkin_timestamp: recentCheckinTimestamp,
             count: item.count,
             rating: item.rating_score
           };
-          break;
         }
       }
-      // TODO: see above
-      if (beerData != null) break;
+      if (aborted) break;
     }
 
     pgClient.query("COMMIT;");
     console.log(`upserted ${upsertedCount} rows`);
-
-    // TODO: fetch back from database if it wasn't stored
   } catch (err) {
     pgClient.query("ROLLBACK;");
     throw err;
@@ -188,7 +218,18 @@ async function findAndCacheUserBeers(userName, beerId) {
     pgClient.release();
   }
 
-  // TODO: if we're not force-recaching, insert last fetch date into user_mapping
+  // if we're not force-recaching, insert last fetch date into user_mapping
+  if (fetchRank == undefined) {
+    await util.tryPgQuery(
+      null,
+      `update user_mapping 
+      set last_review_fetch_timestamp = $1
+      where untappd_username = $2`,
+      [new Date(), userInfo.name],
+      `Update last review fetch timestamp for ${userInfo.name} to ${new Date()}`
+    );
+    console.log(`updated last fetch time to ${new Date()}`);
+  }
 
   return beerData;
 }

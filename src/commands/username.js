@@ -15,28 +15,29 @@ const handler = async function(payload, res) {
     //await util.tryPgQuery(null, "drop table user_mapping", null, "Debug drop");
 
     // UPGRADE
-    // await util.tryPgQuery(
-    //   null,
-    //   `alter table user_mapping
-    //     add column last_review_fetch_timestamp timestamp`,
-    //   null,
-    //   "Alter user mapping table"
-    // );
+    await util.tryPgQuery(
+      null,
+      `alter table user_mapping
+      add column last_review_fetch_timestamp timestamp`,
+      null,
+      "Alter user mapping table"
+    );
 
     await util.tryPgQuery(
       pgClient,
       `create table if not exists user_mapping (
-        slack_user_id varchar primary key, 
-        untappd_username varchar not null,
-        last_review_fetch_timestamp timestamp);`,
+      slack_user_id varchar primary key, 
+      untappd_username varchar not null,
+      last_review_fetch_timestamp timestamp);`,
       null,
       "Create user mapping table"
     );
 
     await util.tryPgQuery(
       pgClient,
-      `insert into user_mapping(slack_user_id, untappd_username) values ($1, $2)
-        on conflict (slack_user_id) do update set untappd_username = $2;`,
+      `insert into user_mapping(slack_user_id, untappd_username) 
+      values ($1, $2)
+      on conflict (slack_user_id) do update set untappd_username = $2;`,
       [slackUser, untappdUser],
       "Add user mapping entry"
     );
