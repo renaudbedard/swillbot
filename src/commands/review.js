@@ -301,7 +301,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
       continue;
     }
 
-    const untappdUser = users[i];
+    const untappdUser = users[i].name;
     const reviewInfo = reviews[i];
     const ratingString = util.getRatingString(reviewInfo.rating);
 
