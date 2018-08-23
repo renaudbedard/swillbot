@@ -101,7 +101,10 @@ async function findReview(userInfo, beerId, beerName) {
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
   }
 
-  if (reviewInfo == null) return null;
+  if (reviewInfo == null) {
+    // TODO: fuzzy search on beer name as a last resort
+    return null;
+  }
 
   // separate request for the check-in comment
   reviewInfo.checkin_comment = await getCheckinComment(reviewInfo.recent_checkin_id);
@@ -191,11 +194,16 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           `Add user review for user ${userInfo.name} and beer ID ${item.beer.bid}`
         );
 
+        if (fetchRank != undefined) {
+          // excessive logging because paranoia
+          console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
+        }
+
         //console.log(`upserted beer id ${item.beer.bid}`);
         upsertedCount++;
 
         if (item.beer.bid == beerId) {
-          console.log(`found! (will continue)`);
+          console.log(`found at rank ${currentRank}! (will continue)`);
           // mock a database result (faster than selecting it back)
           beerData = {
             username: userInfo.name,
@@ -203,7 +211,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
             recent_checkin_id: item.recent_checkin_id,
             recent_checkin_timestamp: recentCheckinTimestamp,
             count: item.count,
-            rating: item.rating_score
+            rating: item.rating_score,
+            rank: currentRank
           };
         }
       }
