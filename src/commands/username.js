@@ -15,13 +15,13 @@ const handler = async function(payload, res) {
     //await util.tryPgQuery(null, "drop table user_mapping", null, "Debug drop");
 
     // UPGRADE
-    await util.tryPgQuery(
-      null,
-      `alter table user_mapping
-      add column last_review_fetch_timestamp timestamp`,
-      null,
-      "Alter user mapping table"
-    );
+    //await util.tryPgQuery(
+    //  null,
+    //  `alter table user_mapping
+    //  add column last_review_fetch_timestamp timestamp`,
+    //  null,
+    //  "Alter user mapping table"
+    //);
 
     await util.tryPgQuery(
       pgClient,
