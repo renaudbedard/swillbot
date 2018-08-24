@@ -116,7 +116,7 @@ function searchForBeerId(query) {
         reject({
           source: context,
           message: "API limit busted! Sorry, wait an hour before trying again.",
-          additionalInfo: data.response
+          additionalInfo: data
         });
         return;
       }
@@ -163,7 +163,7 @@ function getBeerInfo(beerId) {
         reject({
           source: context,
           message: "API limit busted! Sorry, wait an hour before trying again.",
-          additionalInfo: data.response
+          additionalInfo: data
         });
         return;
       }

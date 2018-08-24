@@ -163,7 +163,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         const err = {
           source: `Find beer reviews for user ${userInfo.name} and beer ID ${beerId}`,
           message: "API limit busted! Sorry, wait an hour before trying again.",
-          additionalInfo: res.data.response
+          additionalInfo: res.data
         };
         throw err;
       }
