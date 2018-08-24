@@ -112,6 +112,7 @@ function searchForBeerId(query) {
 
     let req = restClient.get("https://api.untappd.com/v4/search/beer", args, function(data, _) {
       if (!data.response.beers) {
+        console.log(data.response);
         reject({
           source: context,
           message: "API limit busted! Sorry, wait an hour before trying again."
