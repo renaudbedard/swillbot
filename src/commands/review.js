@@ -160,7 +160,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
       res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
 
       if (!res.data.response.beers) {
-        console.log(data.response);
+        console.log(res.data.response);
         const err = {
           source: `Find beer reviews for user ${userInfo.name} and beer ID ${beerId}`,
           message: "API limit busted! Sorry, wait an hour before trying again."
