@@ -146,8 +146,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
 
     // set initial & stopping offset if we're looking for a specific rank
     if (fetchRank != undefined) {
-      initialOffset = Math.max(0, totalCount - fetchRank - limit / 2 - 1); // ranks are 1-based
-      stopAtOffset = initialOffset + limit;
+      initialOffset = Math.max(0, totalCount - (fetchRank - 1) - limit / 2); // ranks are 1-based
+      stopAtOffset = Math.min(initialOffset + limit, totalCount);
       console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
     }
 
