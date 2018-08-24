@@ -136,7 +136,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
 
     console.log(`total count: ${totalCount}`);
 
-    const limit = 50;
+    const limit = fetchRank == undefined ? 50 : 10;
     args.parameters.limit = limit;
 
     let batchCount = 0;
@@ -146,7 +146,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
 
     // set initial & stopping offset if we're looking for a specific rank
     if (fetchRank != undefined) {
-      initialOffset = Math.max(0, totalCount - fetchRank - limit / 2);
+      initialOffset = Math.max(0, totalCount - fetchRank - limit / 2 - 1); // ranks are 1-based
       stopAtOffset = initialOffset + limit;
       console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
     }
@@ -185,8 +185,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         const currentRank = totalCount - cursor - i;
         await util.tryPgQuery(
           pgClient,
-          `insert into user_reviews (
-					username, beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
+          `insert into user_reviews 
+          (username, beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
 					values ($1, $2, $3, $4, $5, $6, $7)
 					on conflict (username, beer_id) do update set 
 					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6, rank = $7;`,
