@@ -113,7 +113,7 @@ async function findReview(userInfo, beerId, beerName) {
       from user_reviews 
       where username = $1 and levenshtein(beer_name, $2) = 
       (select min(levenshtein(beer_name, $2)) from user_reviews where username = $1)`,
-      [beerName],
+      [userInfo.name, beerName],
       `Fuzzy match beer name ${beerName}`
     );
 
