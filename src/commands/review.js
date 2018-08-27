@@ -106,6 +106,8 @@ async function findReview(userInfo, beerId, beerName) {
     // make sure we have the postgresql extension
     await util.tryPgQuery(null, "create extension if not exists fuzzystrmatch", null, `Create fuzzy matching extension`);
 
+    // TODO: would a simple LIKE %blah% work better?
+    // TODO: trigrams? http://www-old.bartlettpublishing.com/site/bartpub/blog/3/entry/350
     // fuzzy search on beer name as a last resort
     const fuzzyResult = await util.tryPgQuery(
       null,
