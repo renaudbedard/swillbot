@@ -103,6 +103,9 @@ async function findReview(userInfo, beerId, beerName) {
   }
 
   if (reviewInfo == null) {
+    // make sure we have the postgresql extension
+    await util.tryPgQuery(null, "create extension if not exists fuzzystrmatch", null, `Create fuzzy matching extension`);
+
     // fuzzy search on beer name as a last resort
     const fuzzyResult = await util.tryPgQuery(
       null,
@@ -113,6 +116,7 @@ async function findReview(userInfo, beerId, beerName) {
       [beerName],
       `Fuzzy match beer name ${beerName}`
     );
+
     if (fuzzyResult.rows.length > 0) {
       console.log(`fuzzy-matched ${beerName} as ${fuzzyResult.rows[0].beer_name}`);
       reviewInfo = await findAndCacheUserBeers(userInfo, beerId, fuzzyResult.rows[0].rank);
