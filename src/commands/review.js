@@ -109,7 +109,7 @@ async function findReview(userInfo, beerId, beerName) {
     // fuzzy search on beer name as a last resort
     const fuzzyResult = await util.tryPgQuery(
       null,
-      `select beer_name, rank
+      `select beer_id, beer_name, rank
       from user_reviews 
       where username = $1 and levenshtein(beer_name, $2) = 
       (select min(levenshtein(beer_name, $2)) from user_reviews where username = $1)`,
@@ -119,7 +119,7 @@ async function findReview(userInfo, beerId, beerName) {
 
     if (fuzzyResult.rows.length > 0) {
       console.log(`fuzzy-matched ${beerName} as ${fuzzyResult.rows[0].beer_name}`);
-      reviewInfo = await findAndCacheUserBeers(userInfo, beerId, fuzzyResult.rows[0].rank);
+      reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
       if (reviewInfo == null) return null; // lolwat though
     } else return null;
   }
