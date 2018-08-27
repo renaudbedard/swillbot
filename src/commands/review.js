@@ -63,14 +63,15 @@ async function findReview(userInfo, beerId, beerName) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
-  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
+  await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
     null,
     `create table if not exists user_reviews (
-		username varchar not null,
-		beer_id integer not null,
+		username text not null,
+    beer_id integer not null,
+    beer_name text not null,
 		recent_checkin_id integer,
 		recent_checkin_timestamp date,
 		count integer,
@@ -84,7 +85,7 @@ async function findReview(userInfo, beerId, beerName) {
   // look in cache first
   const result = await util.tryPgQuery(
     null,
-    `select * 
+    `select rank
     from user_reviews 
     where username = $1 and beer_id = $2`,
     [userInfo.name, beerId],
@@ -102,8 +103,21 @@ async function findReview(userInfo, beerId, beerName) {
   }
 
   if (reviewInfo == null) {
-    // TODO: fuzzy search on beer name as a last resort
-    return null;
+    // fuzzy search on beer name as a last resort
+    const fuzzyResult = await util.tryPgQuery(
+      null,
+      `select beer_name, rank
+      from user_reviews 
+      where username = $1 and levenshtein(beer_name, $2) = 
+      (select min(levenshtein(beer_name, $2)) from user_reviews where username = $1)`,
+      [beerName],
+      `Fuzzy match beer name ${beerName}`
+    );
+    if (fuzzyResult.rows.length > 0) {
+      console.log(`fuzzy-matched ${beerName} as ${fuzzyResult.rows[0].beer_name}`);
+      reviewInfo = await findAndCacheUserBeers(userInfo, beerId, fuzzyResult.rows[0].rank);
+      if (reviewInfo == null) return null; // lolwat though
+    } else return null;
   }
 
   // separate request for the check-in comment
@@ -187,11 +201,20 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         await util.tryPgQuery(
           pgClient,
           `insert into user_reviews 
-          (username, beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
-					values ($1, $2, $3, $4, $5, $6, $7)
+          (username, beer_id, beer_name, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
+					values ($1, $2, $3, $4, $5, $6, $7, $8)
 					on conflict (username, beer_id) do update set 
-					recent_checkin_id = $3, recent_checkin_timestamp = $4, count = $5, rating = $6, rank = $7;`,
-          [userInfo.name, item.beer.bid, item.recent_checkin_id, recentCheckinTimestamp, item.count, item.rating_score, currentRank],
+					recent_checkin_id = $4, recent_checkin_timestamp = $5, count = $6, rating = $7, rank = $8;`,
+          [
+            userInfo.name,
+            item.beer.bid,
+            `${item.brewery.brewery_name.toLowerCase()} ${item.beer.beer_name.toLowerCase()}`,
+            item.recent_checkin_id,
+            recentCheckinTimestamp,
+            item.count,
+            item.rating_score,
+            currentRank
+          ],
           `Add user review for user ${userInfo.name} and beer ID ${item.beer.bid}`
         );
 

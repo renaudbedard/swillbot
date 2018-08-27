@@ -26,8 +26,8 @@ const handler = async function(payload, res) {
     await util.tryPgQuery(
       pgClient,
       `create table if not exists user_mapping (
-      slack_user_id varchar primary key, 
-      untappd_username varchar not null,
+      slack_user_id text primary key, 
+      untappd_username text not null,
       last_review_fetch_timestamp timestamp);`,
       null,
       "Create user mapping table"
