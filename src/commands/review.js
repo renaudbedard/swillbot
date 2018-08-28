@@ -108,7 +108,7 @@ async function findReview(userInfo, beerId, query, parentId, vintageIds) {
     console.log(`trying to match parentId ${parentId} or vintage IDs [${vintageIds}]...`);
     const parentResult = await util.tryPgQuery(
       null,
-      `select beer_id, beer_name
+      `select beer_id, beer_name, rank
       from user_reviews 
       where beer_id = $1 or beer_id = any ($2)`,
       [parentId || -1, vintageIds],
