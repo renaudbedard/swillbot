@@ -149,12 +149,7 @@ function getBeerInfo(beerId) {
       path: {
         id: beerId
       },
-      parameters: _.defaults(
-        {
-          compact: "true"
-        },
-        untappdParams
-      )
+      parameters: untappdParams
     };
 
     let req = restClient.get("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
@@ -167,6 +162,7 @@ function getBeerInfo(beerId) {
         });
         return;
       }
+      console.log(data.response);
       resolve(data.response.beer);
     });
 
