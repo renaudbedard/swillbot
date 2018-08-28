@@ -386,8 +386,11 @@ const handler = async function(payload, res) {
     const beerInfo = await util.getBeerInfo(beerId);
 
     let parentId = null;
-    if (beerInfo.vintage_parent && beerInfo.vintage_parent.beer) parentId = beerInfo.vintage_parent.beer.bid;
-    const vintageIds = beerInfo.vintages.items.map(x => x.beer.bid);
+    const parent = beerInfo.variant_parent || beerInfo.vintage_parent;
+    if (parent && parent.beer) parentId = parent.beer.bid;
+
+    let vintageIds = [];
+    if (beerInfo.vintages) vintageIds = beerInfo.vintages.items.map(x => x.beer.bid);
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query, parentId, vintageIds))).catch(util.onErrorRethrow);
 
