@@ -58,9 +58,10 @@ async function getUntappdUser(slackUserId) {
  * @param {number} beerId The beer ID to look for
  * @param {string} query The query we asked for
  * @param {number=} parentId The beer ID of the parent, if this is a vintage beer
+ * @param {integer[]} vintageIds The beer IDs of the child vintages, if any
  * @return {object[]} The Untappd checkins
  */
-async function findReview(userInfo, beerId, query, parentId) {
+async function findReview(userInfo, beerId, query, parentId, vintageIds) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
@@ -103,16 +104,15 @@ async function findReview(userInfo, beerId, query, parentId) {
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
   }
 
-  if (reviewInfo == null && parentId != null) {
-    console.log(`trying to match parentId ${parentId}...`);
-    // look for the parent vintage
+  if (reviewInfo == null && (parentId != null || vintageIds.length > 0)) {
+    console.log(`trying to match parentId ${parentId} or vintage IDs ${vintageIds}...`);
     const parentResult = await util.tryPgQuery(
       null,
       `select beer_id, beer_name
       from user_reviews 
-      where beer_id = $1`,
-      [parentId],
-      `Looking for parent beer id ${parentId}`
+      where beer_id = $1 or beer_id = any ($2)`,
+      [parentId || -1, vintageIds],
+      `Looking for vintages`
     );
 
     if (parentResult.rows.length > 0) {
@@ -189,8 +189,6 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         const item = res.data.response.beers.items[i];
         const recentCheckinTimestamp = new Date(item.recent_created_at);
 
-        console.log(item);
-
         // stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
         // (unless we're force-recaching)
         if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
@@ -206,9 +204,9 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           pgClient,
           `insert into user_reviews 
           (username, beer_id, beer_name, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
-					values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+					values ($1, $2, $3, $4, $5, $6, $7, $8)
 					on conflict (username, beer_id) do update set 
-					recent_checkin_id = $5, recent_checkin_timestamp = $6, count = $7, rating = $8, rank = $9;`,
+					recent_checkin_id = $4, recent_checkin_timestamp = $5, count = $6, rating = $7, rank = $8;`,
           [
             userInfo.name,
             item.beer.bid,
@@ -389,13 +387,14 @@ const handler = async function(payload, res) {
 
     let parentId = null;
     if (beerInfo.vintage_parent && beerInfo.vintage_parent.beer) parentId = beerInfo.vintage_parent.beer.bid;
+    let vintageIds = beerInfo.vintages.items.map(x => x.beer.bid);
 
-    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query, parentId))).catch(util.onErrorRethrow);
+    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query, parentId, vintageIds))).catch(util.onErrorRethrow);
 
     if (reviews.every(x => x == null)) {
       const error = {
         source: `Looking for beer ID in checkins`,
-        message: `Requested users have not tried \`${beerInfo.beer_name}\` yet!`
+        message: `Requested users have not tried \`${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}\` yet!`
       };
       throw error;
     }
