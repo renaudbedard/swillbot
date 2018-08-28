@@ -55,15 +55,16 @@ async function getUntappdUser(slackUserId) {
 
 /**
  * @param {string} userInfo The user to get checkins from
- * @param {int} beerId The beer ID to look for
- * @param {string} beerName The beer name
+ * @param {number} beerId The beer ID to look for
+ * @param {string} query The query we asked for
+ * @param {number=} parentId The beer ID of the parent, if this is a vintage beer
  * @return {object[]} The Untappd checkins
  */
-async function findReview(userInfo, beerId, beerName) {
+async function findReview(userInfo, beerId, query, parentId) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
-  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
+  await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
@@ -71,7 +72,8 @@ async function findReview(userInfo, beerId, beerName) {
     `create table if not exists user_reviews (
 		username text not null,
     beer_id integer not null,
-    beer_name text not null,
+    beer_name text,
+    parent_beer_id integer,
 		recent_checkin_id integer,
 		recent_checkin_timestamp date,
 		count integer,
@@ -103,25 +105,19 @@ async function findReview(userInfo, beerId, beerName) {
   }
 
   if (reviewInfo == null) {
-    // make sure we have the postgresql extension
-    await util.tryPgQuery(null, "create extension if not exists fuzzystrmatch", null, `Create fuzzy matching extension`);
-
-    // TODO: would a simple LIKE %blah% work better?
-    // TODO: trigrams? http://www-old.bartlettpublishing.com/site/bartpub/blog/3/entry/350
-    // fuzzy search on beer name as a last resort
-    const fuzzyResult = await util.tryPgQuery(
+    // look for the parent vintage
+    const parentResult = await util.tryPgQuery(
       null,
-      `select beer_id, beer_name, rank
+      `select beer_id, beer_name
       from user_reviews 
-      where username = $1 and levenshtein(beer_name, $2) = 
-      (select min(levenshtein(beer_name, $2)) from user_reviews where username = $1)`,
-      [userInfo.name, beerName],
-      `Fuzzy match beer name ${beerName}`
+      where beer_id = $2 or parent_beer_id = $2 or parent_beer_id = $1`,
+      [beerId, parentId || -1],
+      `Looking for parent beer id ${parentId}`
     );
 
-    if (fuzzyResult.rows.length > 0) {
-      console.log(`fuzzy-matched ${beerName} as ${fuzzyResult.rows[0].beer_name}`);
-      reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
+    if (parentResult.rows.length > 0) {
+      console.log(`matched ${query} as ${parentResult.rows[0].beer_name}`);
+      reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
       if (reviewInfo == null) return null; // lolwat though
     } else return null;
   }
@@ -193,6 +189,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         const item = res.data.response.beers.items[i];
         const recentCheckinTimestamp = new Date(item.recent_created_at);
 
+        console.log(item);
+
         // stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
         // (unless we're force-recaching)
         if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
@@ -203,18 +201,22 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           break;
         }
 
+        let vintageParentBeerId;
+        if (item.beer.vintage_parent && item.beer.vintage_parent.beer) vintageParentBeerId = item.beer.vintage_parent.beer.bid;
+
         const currentRank = totalCount - cursor - i;
         await util.tryPgQuery(
           pgClient,
           `insert into user_reviews 
-          (username, beer_id, beer_name, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
-					values ($1, $2, $3, $4, $5, $6, $7, $8)
+          (username, beer_id, beer_name, parent_beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
+					values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 					on conflict (username, beer_id) do update set 
-					recent_checkin_id = $4, recent_checkin_timestamp = $5, count = $6, rating = $7, rank = $8;`,
+					recent_checkin_id = $5, recent_checkin_timestamp = $6, count = $7, rating = $8, rank = $9;`,
           [
             userInfo.name,
             item.beer.bid,
-            `${item.brewery.brewery_name.toLowerCase()} ${item.beer.beer_name.toLowerCase()}`,
+            `${item.brewery.brewery_name} - ${item.beer.beer_name}`,
+            vintageParentBeerId,
             item.recent_checkin_id,
             recentCheckinTimestamp,
             item.count,
@@ -238,6 +240,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           beerData = {
             username: userInfo.name,
             beer_id: item.beer.bid,
+            beer_name: item.beer.beer_name,
+            parent_beer_id: vintageParentBeerId,
             recent_checkin_id: item.recent_checkin_id,
             recent_checkin_timestamp: recentCheckinTimestamp,
             count: item.count,
@@ -345,6 +349,11 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     const reviewInfo = reviews[i];
     const ratingString = util.getRatingString(reviewInfo.rating);
 
+    // is this a fuzzy match?
+    if (reviewInfo.beer_id != beerInfo.bid) {
+      attachment.text += `_(matched as ${reviewInfo.beer_name})_`;
+    }
+
     attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
     attachment.text += `\n${reviewInfo.checkin_comment}`;
 
@@ -383,7 +392,10 @@ const handler = async function(payload, res) {
     const beerId = await util.searchForBeerId(query);
     const beerInfo = await util.getBeerInfo(beerId);
 
-    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query))).catch(util.onErrorRethrow);
+    let parentId;
+    if (beerInfo.vintage_parent && beerInfo.vintage_parent.beer) parentId = beerInfo.vintage_parent.beer.bid;
+
+    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query, parentId))).catch(util.onErrorRethrow);
 
     if (reviews.every(x => x == null)) {
       const error = {

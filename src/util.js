@@ -162,7 +162,7 @@ function getBeerInfo(beerId) {
         });
         return;
       }
-      console.log(data.response.beer.vintage_parent);
+      //console.log(data.response);
       resolve(data.response.beer);
     });
 
