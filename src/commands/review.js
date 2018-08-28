@@ -111,8 +111,8 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
       null,
       `select beer_id, beer_name, rank
       from user_reviews 
-      where beer_id = $1 or beer_id = any ($2)`,
-      [parentId || -1, vintageIds],
+      where username = $1 and (beer_id = $2 or beer_id = any ($3))`,
+      [userInfo.name, parentId || -1, vintageIds],
       `Looking for vintages`
     );
 
@@ -129,8 +129,8 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
       null,
       `select beer_id, beer_name, rank
       from user_reviews 
-      where beer_name ilike $1`,
-      [`%${beerName}%`],
+      where username = $1 and beer_name ilike $2`,
+      [userInfo.name, `%${beerName}%`],
       `Looking for beer by name`
     );
 
@@ -239,10 +239,10 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           `Add user review for user ${userInfo.name} and beer ID ${item.beer.bid}`
         );
 
-        // excessive logging because paranoia
-        if (fetchRank != undefined) {
-          console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
-        }
+        // DEBUG logging
+        //if (fetchRank != undefined) {
+        //  console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
+        //}
 
         //console.log(`upserted beer id ${item.beer.bid}`);
         upsertedCount++;
