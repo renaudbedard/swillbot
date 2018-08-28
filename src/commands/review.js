@@ -117,7 +117,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
     );
 
     if (parentResult.rows.length > 0) {
-      console.log(`matched '${beerName}' as '${parentResult.rows[0].beer_name}'`);
+      console.log(`matched '${beerName}' as '${parentResult.rows[0].beer_name}' (rank ${parentResult.rows[0].rank})`);
       reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, parentResult.rows[0].rank);
     }
   }
@@ -240,9 +240,9 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         );
 
         // excessive logging because paranoia
-        //if (fetchRank != undefined) {
-        //  console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
-        //}
+        if (fetchRank != undefined) {
+          console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
+        }
 
         //console.log(`upserted beer id ${item.beer.bid}`);
         upsertedCount++;
