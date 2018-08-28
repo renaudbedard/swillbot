@@ -64,7 +64,7 @@ async function findReview(userInfo, beerId, query, parentId) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
-  await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
+  //await util.tryPgQuery(null, "drop table user_reviews", null, "Debug drop");
 
   // create table if needed
   await util.tryPgQuery(
@@ -73,7 +73,6 @@ async function findReview(userInfo, beerId, query, parentId) {
 		username text not null,
     beer_id integer not null,
     beer_name text,
-    parent_beer_id integer,
 		recent_checkin_id integer,
 		recent_checkin_timestamp date,
 		count integer,
@@ -104,14 +103,15 @@ async function findReview(userInfo, beerId, query, parentId) {
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
   }
 
-  if (reviewInfo == null) {
+  if (reviewInfo == null && parentId != null) {
+    console.log(`trying to match parentId ${parentId}...`);
     // look for the parent vintage
     const parentResult = await util.tryPgQuery(
       null,
       `select beer_id, beer_name
       from user_reviews 
-      where beer_id = $2 or parent_beer_id = $2 or parent_beer_id = $1`,
-      [beerId, parentId || -1],
+      where beer_id = $1`,
+      [parentId],
       `Looking for parent beer id ${parentId}`
     );
 
@@ -201,14 +201,11 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           break;
         }
 
-        let vintageParentBeerId;
-        if (item.beer.vintage_parent && item.beer.vintage_parent.beer) vintageParentBeerId = item.beer.vintage_parent.beer.bid;
-
         const currentRank = totalCount - cursor - i;
         await util.tryPgQuery(
           pgClient,
           `insert into user_reviews 
-          (username, beer_id, beer_name, parent_beer_id, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
+          (username, beer_id, beer_name, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
 					values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 					on conflict (username, beer_id) do update set 
 					recent_checkin_id = $5, recent_checkin_timestamp = $6, count = $7, rating = $8, rank = $9;`,
@@ -216,7 +213,6 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
             userInfo.name,
             item.beer.bid,
             `${item.brewery.brewery_name} - ${item.beer.beer_name}`,
-            vintageParentBeerId,
             item.recent_checkin_id,
             recentCheckinTimestamp,
             item.count,
@@ -241,7 +237,6 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
             username: userInfo.name,
             beer_id: item.beer.bid,
             beer_name: item.beer.beer_name,
-            parent_beer_id: vintageParentBeerId,
             recent_checkin_id: item.recent_checkin_id,
             recent_checkin_timestamp: recentCheckinTimestamp,
             count: item.count,
@@ -392,7 +387,7 @@ const handler = async function(payload, res) {
     const beerId = await util.searchForBeerId(query);
     const beerInfo = await util.getBeerInfo(beerId);
 
-    let parentId;
+    let parentId = null;
     if (beerInfo.vintage_parent && beerInfo.vintage_parent.beer) parentId = beerInfo.vintage_parent.beer.bid;
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query, parentId))).catch(util.onErrorRethrow);
