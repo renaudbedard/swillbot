@@ -234,7 +234,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
           beerData = {
             username: userInfo.name,
             beer_id: item.beer.bid,
-            beer_name: item.beer.beer_name,
+            beer_name: `${item.brewery.brewery_name} - ${item.beer.beer_name}`,
             recent_checkin_id: item.recent_checkin_id,
             recent_checkin_timestamp: recentCheckinTimestamp,
             count: item.count,
@@ -344,7 +344,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
     // is this a fuzzy match?
     if (reviewInfo.beer_id != beerInfo.bid) {
-      attachment.text += `_(matched as ${reviewInfo.beer_name})_`;
+      attachment.text += `_(matched as '${reviewInfo.beer_name}')_\n`;
     }
 
     attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
