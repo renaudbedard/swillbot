@@ -105,7 +105,7 @@ async function findReview(userInfo, beerId, query, parentId, vintageIds) {
   }
 
   if (reviewInfo == null && (parentId != null || vintageIds.length > 0)) {
-    console.log(`trying to match parentId ${parentId} or vintage IDs ${vintageIds}...`);
+    console.log(`trying to match parentId ${parentId} or vintage IDs [${vintageIds}]...`);
     const parentResult = await util.tryPgQuery(
       null,
       `select beer_id, beer_name
@@ -116,8 +116,8 @@ async function findReview(userInfo, beerId, query, parentId, vintageIds) {
     );
 
     if (parentResult.rows.length > 0) {
-      console.log(`matched ${query} as ${parentResult.rows[0].beer_name}`);
-      reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
+      console.log(`matched '${query}' as '${parentResult.rows[0].beer_name}'`);
+      reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, parentResult.rows[0].rank);
       if (reviewInfo == null) return null; // lolwat though
     } else return null;
   }
