@@ -56,12 +56,12 @@ async function getUntappdUser(slackUserId) {
 /**
  * @param {string} userInfo The user to get checkins from
  * @param {number} beerId The beer ID to look for
- * @param {string} query The query we asked for
+ * @param {string} beerName The beer name
  * @param {number=} parentId The beer ID of the parent, if this is a vintage beer
  * @param {integer[]} vintageIds The beer IDs of the child vintages, if any
  * @return {object[]} The Untappd checkins
  */
-async function findReview(userInfo, beerId, query, parentId, vintageIds) {
+async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
@@ -104,6 +104,7 @@ async function findReview(userInfo, beerId, query, parentId, vintageIds) {
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
   }
 
+  // vintages/variants
   if (reviewInfo == null && (parentId != null || vintageIds.length > 0)) {
     console.log(`trying to match parentId ${parentId} or vintage IDs [${vintageIds}]...`);
     const parentResult = await util.tryPgQuery(
@@ -116,10 +117,28 @@ async function findReview(userInfo, beerId, query, parentId, vintageIds) {
     );
 
     if (parentResult.rows.length > 0) {
-      console.log(`matched '${query}' as '${parentResult.rows[0].beer_name}'`);
+      console.log(`matched '${beerName}' as '${parentResult.rows[0].beer_name}'`);
       reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, parentResult.rows[0].rank);
-      if (reviewInfo == null) return null; // lolwat though
-    } else return null;
+    }
+  }
+
+  // last resort : string matching
+  if (reviewInfo == null) {
+    console.log(`trying to string match beer '${beerName}'...`);
+    const fuzzyResult = await util.tryPgQuery(
+      null,
+      `select beer_id, beer_name, rank
+      from user_reviews 
+      where beer_name ilike $1`,
+      [`%${beerName}%`],
+      `Looking for beer by name`
+    );
+
+    if (fuzzyResult.rows.length > 0) {
+      console.log(`matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
+      reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
+    }
+    if (reviewInfo == null) return null;
   }
 
   // separate request for the check-in comment
@@ -392,7 +411,9 @@ const handler = async function(payload, res) {
     let vintageIds = [];
     if (beerInfo.vintages) vintageIds = beerInfo.vintages.items.map(x => x.beer.bid);
 
-    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, query, parentId, vintageIds))).catch(util.onErrorRethrow);
+    const beerName = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+
+    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, beerName, parentId, vintageIds))).catch(util.onErrorRethrow);
 
     if (reviews.every(x => x == null)) {
       const error = {
