@@ -367,7 +367,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
     // is this a fuzzy match?
     if (reviewInfo.beer_id != beerInfo.bid) {
-      attachment.text += `_(matched as '${reviewInfo.beer_name}')_\n`;
+      attachment.text += `_Vintage or variant : *${reviewInfo.beer_name}*_\n`;
     }
 
     attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
