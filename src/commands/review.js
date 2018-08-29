@@ -186,6 +186,8 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
       //console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
     }
 
+    // TODO: early-out if there are no new beers! (as per timestamp)
+
     pgClient.query("BEGIN;");
 
     let aborted = false;
