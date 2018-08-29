@@ -97,16 +97,16 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
   let reviewInfo;
   if (result.rows.length == 1) {
     // force-recache the batch around that review's rank
-    console.log(`found the beer check-in; will force-recache`);
+    console.log(`[${userInfo.name}] found the beer check-in; will force-recache`);
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId, result.rows[0].rank);
   } else {
-    console.log(`could not find the beer check-in; will fetch`);
+    console.log(`[${userInfo.name}] could not find the beer check-in; will fetch`);
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
   }
 
   // vintages/variants
   if (reviewInfo == null && (parentId != null || vintageIds.length > 0)) {
-    console.log(`trying to match parentId ${parentId} or vintage IDs [${vintageIds}]...`);
+    console.log(`[${userInfo.name}] trying to match parentId ${parentId} or vintage IDs [${vintageIds}]...`);
     const parentResult = await util.tryPgQuery(
       null,
       `select beer_id, beer_name, rank
@@ -117,14 +117,14 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
     );
 
     if (parentResult.rows.length > 0) {
-      console.log(`matched '${beerName}' as '${parentResult.rows[0].beer_name}' (rank ${parentResult.rows[0].rank})`);
+      console.log(`[${userInfo.name}] matched '${beerName}' as '${parentResult.rows[0].beer_name}' (rank ${parentResult.rows[0].rank})`);
       reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, parentResult.rows[0].rank);
     }
   }
 
   // last resort : string matching
   if (reviewInfo == null) {
-    console.log(`trying to string match beer '${beerName}'...`);
+    console.log(`[${userInfo.name}] trying to string match beer '${beerName}'...`);
     const fuzzyResult = await util.tryPgQuery(
       null,
       `select beer_id, beer_name, rank
@@ -135,7 +135,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
     );
 
     if (fuzzyResult.rows.length > 0) {
-      console.log(`matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
+      console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
       reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
     }
     if (reviewInfo == null) return null;
@@ -212,7 +212,9 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         // (unless we're force-recaching)
         if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
           console.log(
-            `stopped fetching; current item was checked in at ${recentCheckinTimestamp} but we last fetched at ${userInfo.lastReviewFetchTimestamp}`
+            `[${userInfo.name}] stopped fetching; current item was checked in at ${recentCheckinTimestamp} but we last fetched at ${
+              userInfo.lastReviewFetchTimestamp
+            }`
           );
           aborted = true;
           break;
@@ -248,7 +250,9 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         upsertedCount++;
 
         if (item.beer.bid == beerId) {
-          console.log(`found '${item.brewery.brewery_name} - ${item.beer.beer_name}' at rank ${currentRank} (expected ${fetchRank})!`);
+          console.log(
+            `[${userInfo.name}] found '${item.brewery.brewery_name} - ${item.beer.beer_name}' at rank ${currentRank} (expected ${fetchRank})`
+          );
           // mock a database result (faster than selecting it back)
           beerData = {
             username: userInfo.name,
@@ -266,7 +270,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     }
 
     pgClient.query("COMMIT;");
-    console.log(`upserted ${upsertedCount} rows`);
+    console.log(`[${userInfo.name}] upserted ${upsertedCount} rows`);
   } catch (err) {
     pgClient.query("ROLLBACK;");
     throw err;
@@ -284,7 +288,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
       [new Date(), userInfo.name],
       `Update last review fetch timestamp for ${userInfo.name} to ${new Date()}`
     );
-    console.log(`updated last fetch time to ${new Date()}`);
+    //console.log(`[${userInfo.name}] updated last fetch time to ${new Date()}`);
   }
 
   return beerData;
