@@ -415,7 +415,7 @@ const handler = async function(payload, res) {
     let vintageIds = [];
     if (beerInfo.vintages) vintageIds = beerInfo.vintages.items.map(x => x.beer.bid);
 
-    const beerName = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+    const beerName = `${beerInfo.brewery.brewery_name} - ${beerInfo.beer_name}`;
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, beerName, parentId, vintageIds))).catch(util.onErrorRethrow);
 
