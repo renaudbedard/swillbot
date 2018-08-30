@@ -31,7 +31,7 @@ Fetches the latest Untappd check-in for _another_ registered user for the reques
 Fetches the latest Untappd check-in for _all_ registered users for the requested beer, beer as well as its aggregate score over all check-ins.
 
 #### Variants or vintages
-<img alt="Variants and vintages" src="https://i.imgur.com/Z3InjAi" width="640">
+<img alt="Variants and vintages" src="https://i.imgur.com/Z3InjAi.png" width="640">
 If the queried beer wasn't checked in by a user, its variants and vintages will be tested for check-ins.
 
 ## Installation procedure
