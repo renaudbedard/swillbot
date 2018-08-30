@@ -138,7 +138,10 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
       console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
       reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
     }
-    if (reviewInfo == null) return null;
+    if (reviewInfo == null) {
+      console.log(`[${userInfo.name}] not found! we tried...`);
+      return null;
+    }
   }
 
   // separate request for the check-in comment
@@ -355,8 +358,8 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     if (i > 0 && !skipAttachment) {
       slackMessage.attachments.push(attachment);
       attachment = { color: "#ffcc00", text: "" };
-      skipAttachment = false;
     }
+    skipAttachment = false;
 
     if (reviews[i] == null) {
       skipAttachment = true;
@@ -381,7 +384,9 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
   }
 
-  if (!skipAttachment) slackMessage.attachments.push(attachment);
+  if (!skipAttachment) {
+    slackMessage.attachments.push(attachment);
+  }
 
   return slackMessage;
 }
