@@ -189,7 +189,12 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
       //console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
     }
 
-    // TODO: early-out if there are no new beers! (as per timestamp)
+    // early-out if there are no new beers! (as per timestamp)
+    let recentCheckinTimestamp = new Date(res.data.response.beers.items[0].recent_created_at);
+    if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
+      console.log(`[${userInfo.name}] already up to date, earlying out!`);
+      return null;
+    }
 
     pgClient.query("BEGIN;");
 
@@ -211,7 +216,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
       batchCount = res.data.response.beers.items.length;
       for (let i = 0; i < batchCount; i++) {
         const item = res.data.response.beers.items[i];
-        const recentCheckinTimestamp = new Date(item.recent_created_at);
+        recentCheckinTimestamp = new Date(item.recent_created_at);
 
         // stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
         // (unless we're force-recaching)
@@ -275,7 +280,9 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     }
 
     pgClient.query("COMMIT;");
-    console.log(`[${userInfo.name}] upserted ${upsertedCount} rows`);
+    if (upsertedCount > 0) {
+      console.log(`[${userInfo.name}] upserted ${upsertedCount} rows`);
+    }
   } catch (err) {
     pgClient.query("ROLLBACK;");
     throw err;
