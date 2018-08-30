@@ -9,7 +9,6 @@
   },
   "scripts": {
     "start": "node ./src",
-    "notify": "node ./src/tasks/notify",
     "test": "standard"
   },
   "author": {
@@ -22,7 +21,6 @@
   },
   "dependencies": {
     "body-parser": "^1.15.0",
-    "botkit": "^0.6.16",
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
     "express-http-proxy": "^1.2.0",
