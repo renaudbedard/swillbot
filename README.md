@@ -1,5 +1,5 @@
 # SwillBot
-A slack bot for light Untappd integration, written using [Node.js](https://nodejs.org/en/), [Express](https://expressjs.com/) and deployed on Heroku.
+A slack bot for light Untappd integration, written using [Node.js](https://nodejs.org/en/), [Express](https://expressjs.com/) and deployed on [Heroku](https://dashboard.heroku.com/).
 
 ## Features
 Note: Most queries use a delayed response callback, so the immediate response will be a `Working...` message that is only shown to the calling user. This avoids the [3 second timeout](https://api.slack.com/slash-commands#responding_basic_receipt) on Slack slash command response.
