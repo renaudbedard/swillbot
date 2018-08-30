@@ -2,6 +2,8 @@
 A slack bot for light Untappd integration, written using [Node.js](https://nodejs.org/en/), [Express](https://expressjs.com/) and deployed on Heroku.
 
 ## Features
+Note: Most queries use a delayed response callback, so the immediate response will be a `Working...` message that is only shown to the calling user. This avoids the [3 second timeout](https://api.slack.com/slash-commands#responding_basic_receipt) on Slack slash command response.
+
 ### /untappd
 Note: The bot uses [the following custom emojis](https://imgur.com/a/5acJQHv) for more detail and visual uniformity : `:fullbeer:`, `:threequarterbeer:`, `:halfbeer:` and `:quarterbeer:`.
 
