@@ -43,6 +43,9 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
+    // strip newlines and replace with spaces
+    payload.text = payload.text.replace(/[\n\r]/g, " ");
+
     const beerIds = await Promise.all(payload.text.split(",").map(x => util.searchForBeerId(x.trim()))).catch(util.onErrorRethrow);
     const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(util.onErrorRethrow);
 
