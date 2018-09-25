@@ -145,7 +145,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
   }
 
   // separate request for the check-in comment
-  reviewInfo.checkin_comment = await getCheckinComment(reviewInfo.recent_checkin_id);
+  [reviewInfo.checkin_comment, reviewInfo.checkin_photo] = await getCheckinComment(reviewInfo.recent_checkin_id);
 
   return reviewInfo;
 }
@@ -324,9 +324,9 @@ function getCheckinComment(checkinId) {
           message: "Couldn't find matching check-in!"
         });
       } else {
-        let checkinMedia = data.response.checkin.media;
-        if (checkinMedia.count > 0) console.log(checkinMedia.items[0].photo);
-        resolve(data.response.checkin.checkin_comment);
+        let checkin = data.response.checkin;
+        if (checkin.media.count > 0) resolve([checkin.checkin_comment, checkin.media.items[0].photo.photo_img_md]);
+        else resolve([checkin.checkin_comment, null]);
       }
     });
     req.on("error", function(err) {
@@ -388,6 +388,8 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
     attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
     attachment.text += `\n${reviewInfo.checkin_comment}`;
+
+    attachment.image_url = reviewInfo.checkin_photo;
 
     const date = reviewInfo.recent_checkin_timestamp;
     const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
