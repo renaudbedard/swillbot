@@ -389,7 +389,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
     attachment.text += `\n${reviewInfo.checkin_comment}`;
 
-    if (reviewInfo.checkin_photo !== null) attachment.image_url = reviewInfo.checkin_photo;
+    if (reviewInfo.checkin_photo !== null) attachment.thumb_url = reviewInfo.checkin_photo;
 
     const date = reviewInfo.recent_checkin_timestamp;
     const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
