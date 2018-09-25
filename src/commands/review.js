@@ -325,7 +325,7 @@ function getCheckinComment(checkinId) {
         });
       } else {
         let checkin = data.response.checkin;
-        if (checkin.media.count > 0) resolve([checkin.checkin_comment, checkin.media.items[0].photo.photo_img_md]);
+        if (checkin.media.count > 0) resolve([checkin.checkin_comment, checkin.media.items[0].photo.photo_img_sm]);
         else resolve([checkin.checkin_comment, null]);
       }
     });
@@ -389,7 +389,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
     attachment.text += `\n${reviewInfo.checkin_comment}`;
 
-    attachment.image_url = reviewInfo.checkin_photo;
+    if (reviewInfo.checkin_photo !== null) attachment.image_url = reviewInfo.checkin_photo;
 
     const date = reviewInfo.recent_checkin_timestamp;
     const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
