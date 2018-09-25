@@ -324,7 +324,7 @@ function getCheckinComment(checkinId) {
           message: "Couldn't find matching check-in!"
         });
       } else {
-        debug.log(data.response.checkin.media);
+        console.log(data.response.checkin.media);
         resolve(data.response.checkin.checkin_comment);
       }
     });
