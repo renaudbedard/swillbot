@@ -323,7 +323,10 @@ function getCheckinComment(checkinId) {
           source: `Get check-in comment for #${checkinId}`,
           message: "Couldn't find matching check-in!"
         });
-      } else resolve(data.response.checkin.checkin_comment);
+      } else {
+        debug.log(data.response.checkin.media);
+        resolve(data.response.checkin.checkin_comment);
+      }
     });
     req.on("error", function(err) {
       reject({
