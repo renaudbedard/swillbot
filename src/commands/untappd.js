@@ -51,7 +51,8 @@ const handler = async function(payload, res) {
 
     let beerIdPromises = payload.text.split(",").map(x => util.searchForBeerId(x.trim()));
     const beerIds = await Promise.all(beerIdPromises.map(p => p.catch(() => undefined))); // ignore errors
-    const beerInfos = await Promise.all(beerIds.map(x => (!x ? null : util.getBeerInfo(x)))).catch(util.onErrorRethrow);
+    beerIds = beerIds.filter(x => x); // filter out errored (TODO: display error message for those which failed)
+    const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(util.onErrorRethrow);
 
     const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
     util.sendDelayedResponse(message, payload.response_url);
