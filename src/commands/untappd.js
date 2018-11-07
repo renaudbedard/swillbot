@@ -18,6 +18,9 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
     attachments: []
   };
 
+  // order by score, descending
+  beerInfos.sort((a, b) => b.rating_score - a.rating_score);
+
   for (let beerInfo of beerInfos) {
     let ratingString = util.getRatingString(beerInfo.rating_score);
 
@@ -46,8 +49,9 @@ const handler = async function(payload, res) {
     // strip newlines and replace with spaces
     payload.text = payload.text.replace(/[\n\r]/g, " ");
 
-    const beerIds = await Promise.all(payload.text.split(",").map(x => util.searchForBeerId(x.trim()))).catch(util.onErrorRethrow);
-    const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(util.onErrorRethrow);
+    let beerIdPromises = payload.text.split(",").map(x => util.searchForBeerId(x.trim()));
+    const beerIds = await Promise.all(beerIdPromises.map(p => p.catch(() => undefined))); // ignore errors
+    const beerInfos = await Promise.all(beerIds.map(x => (!x ? null : util.getBeerInfo(x)))).catch(util.onErrorRethrow);
 
     const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
     util.sendDelayedResponse(message, payload.response_url);
