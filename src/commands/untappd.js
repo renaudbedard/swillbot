@@ -50,7 +50,7 @@ const handler = async function(payload, res) {
     payload.text = payload.text.replace(/[\n\r]/g, " ");
 
     let beerIdPromises = payload.text.split(",").map(x => util.searchForBeerId(x.trim()));
-    const beerIds = await Promise.all(beerIdPromises.map(p => p.catch(() => undefined))); // ignore errors
+    let beerIds = await Promise.all(beerIdPromises.map(p => p.catch(() => undefined))); // ignore errors
     beerIds = beerIds.filter(x => x); // filter out errored (TODO: display error message for those which failed)
     const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(util.onErrorRethrow);
 
