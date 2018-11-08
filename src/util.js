@@ -128,7 +128,8 @@ function searchForBeerId(query) {
       } else
         reject({
           source: context,
-          message: "Couldn't find matching beer!"
+          message: "Couldn't find matching beer!",
+          exactQuery: query
         });
     });
 

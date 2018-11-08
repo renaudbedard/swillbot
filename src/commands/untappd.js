@@ -18,6 +18,20 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
     attachments: []
   };
 
+  // add in-error attachments first
+  for (let beerInfo of beerInfos) {
+    if (beerInfo.inError) {
+      let attachment = {
+        color: "#ff0000",
+        text: `Couldn't find matching beer for : ${beerInfo.query}`
+      };
+      slackMessage.attachments.push(attachment);
+    }
+  }
+
+  // filter 'em out
+  beerInfos = beerInfos.filter(x => !x.inError);
+
   // order by score, descending
   beerInfos.sort((a, b) => b.rating_score - a.rating_score);
 
@@ -49,10 +63,16 @@ const handler = async function(payload, res) {
     // strip newlines and replace with spaces
     payload.text = payload.text.replace(/[\n\r]/g, " ");
 
-    let beerIdPromises = payload.text.split(",").map(x => util.searchForBeerId(x.trim()));
-    let beerIds = await Promise.all(beerIdPromises.map(p => p.catch(() => undefined))); // ignore errors
-    beerIds = beerIds.filter(x => x); // filter out errored (TODO: display error message for those which failed)
-    const beerInfos = await Promise.all(beerIds.map(x => util.getBeerInfo(x))).catch(util.onErrorRethrow);
+    const beerIdPromises = payload.text.split(",").map(x => util.searchForBeerId(x.trim()));
+    const beerIds = await Promise.all(
+      beerIdPromises.map(p =>
+        p.catch(err => {
+          // ignore errors
+          return { inError: true, query: err.exactQuery };
+        })
+      )
+    );
+    const beerInfos = await Promise.all(beerIds.map(x => (x.inError ? x : util.getBeerInfo(x)))).catch(util.onErrorRethrow);
 
     const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
     util.sendDelayedResponse(message, payload.response_url);
