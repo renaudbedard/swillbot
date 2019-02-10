@@ -437,7 +437,7 @@ const handler = async function(payload, res) {
 
     const beerName = `${beerInfo.brewery.brewery_name} - ${beerInfo.beer_name}`;
 
-    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId, beerName, parentId, vintageIds))).catch(util.onErrorRethrow);
+    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId.id, beerName, parentId, vintageIds))).catch(util.onErrorRethrow);
 
     if (reviews.every(x => x == null)) {
       const error = {
