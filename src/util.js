@@ -124,7 +124,10 @@ function searchForBeerId(query) {
         data.response.beers.count > 0 ? data.response.beers.items[0] : data.response.homebrew.count > 0 ? data.response.homebrew.items[0] : null;
       if (firstResult) {
         //console.log(`beer id : ${firstResult.beer.bid}`);
-        resolve(firstResult.beer.bid);
+        resolve({
+          id: firstResult.beer.bid,
+          query: query
+        });
       } else
         reject({
           source: context,
@@ -143,7 +146,7 @@ function searchForBeerId(query) {
  * @param {int} beerId The beer ID to look for
  * @return {Promise<object>} The Untapped data for this beer
  */
-function getBeerInfo(beerId) {
+function getBeerInfo(beerId, query) {
   const context = `Get beer info for beer #${beerId}`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -164,7 +167,9 @@ function getBeerInfo(beerId) {
         return;
       }
       //console.log(data.response);
-      resolve(data.response.beer);
+      let response = data.response.beer;
+      response.query = query;
+      resolve(response);
     });
 
     req.on("error", function(err) {

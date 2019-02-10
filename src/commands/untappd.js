@@ -42,9 +42,11 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
       color: "#ffcc00",
       title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
       thumb_url: beerInfo.beer_label,
-      text: `${ratingString} (${beerInfo.rating_count} ratings)\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu ||
-        0} IBU_\nQuery : \`${beerInfo.query}\``
+      text: `${ratingString} (${beerInfo.rating_count} ratings)\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
     };
+    if (beerInfos.length > 1) {
+      attachment.text = `Query : \`${beerInfo.query}\`\n${attachment.text}`;
+    }
     if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
     else attachment.title = `${beerInfo.beer_name}`;
     if (beerInfo.beer_description) attachment.text += `\n${beerInfo.beer_description}`;
@@ -73,7 +75,7 @@ const handler = async function(payload, res) {
         })
       )
     );
-    const beerInfos = await Promise.all(beerIds.map(x => (x.inError ? x : util.getBeerInfo(x)))).catch(util.onErrorRethrow);
+    const beerInfos = await Promise.all(beerIds.map(x => (x.inError ? x : util.getBeerInfo(x.id, x.query)))).catch(util.onErrorRethrow);
 
     const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
     util.sendDelayedResponse(message, payload.response_url);

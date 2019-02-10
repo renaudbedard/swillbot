@@ -426,7 +426,7 @@ const handler = async function(payload, res) {
     else untappdUsers = [await getUntappdUser(slackUser)];
 
     const beerId = await util.searchForBeerId(query);
-    const beerInfo = await util.getBeerInfo(beerId);
+    const beerInfo = await util.getBeerInfo(beerId, query);
 
     let parentId = null;
     const parent = beerInfo.variant_parent || beerInfo.vintage_parent;
