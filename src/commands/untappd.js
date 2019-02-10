@@ -45,7 +45,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
       text: `${ratingString} (${beerInfo.rating_count} ratings)\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
     };
     if (beerInfos.length > 1) {
-      attachment.text = `Query : \`${beerInfo.query}\`\n${attachment.text}`;
+      attachment.text = `\`${beerInfo.query}\`\n${attachment.text}`;
     }
     if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
     else attachment.title = `${beerInfo.beer_name}`;
