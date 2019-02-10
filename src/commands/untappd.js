@@ -42,7 +42,8 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
       color: "#ffcc00",
       title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
       thumb_url: beerInfo.beer_label,
-      text: `${ratingString} (${beerInfo.rating_count} ratings)\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
+      text: `${ratingString} (${beerInfo.rating_count} ratings)\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu ||
+        0} IBU_\nQuery : \`${beerInfo.query}\``
     };
     if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
     else attachment.title = `${beerInfo.beer_name}`;
