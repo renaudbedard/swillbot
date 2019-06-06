@@ -44,6 +44,9 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
       thumb_url: beerInfo.beer_label,
       text: `${ratingString} (${beerInfo.rating_count} ratings)\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
     };
+    if (beerInfo.price) {
+      attachment.text = `${attachment.text} — ${beerInfo.rating_score / beerInfo.price} :fullbeer:/:dollar:`;
+    }
     if (beerInfos.length > 1) {
       attachment.text = `:mag: \`${beerInfo.query}\`\n${attachment.text}`;
     }
@@ -66,7 +69,12 @@ const handler = async function(payload, res) {
     // strip newlines and replace with spaces
     payload.text = payload.text.replace(/[\n\r]/g, " ");
 
-    const beerIdPromises = payload.text.split(",").map(x => util.searchForBeerId(x.trim()));
+    const splitText = payload.text.split(",");
+
+    const beerQueries = splitText.map(x => x.split("$")[0]);
+    const beerPrices = splitText.map(x => x.split("$")[1]);
+
+    const beerIdPromises = beerQueries.map(x => util.searchForBeerId(x.trim()));
     const beerIds = await Promise.all(
       beerIdPromises.map(p =>
         p.catch(err => {
@@ -76,6 +84,8 @@ const handler = async function(payload, res) {
       )
     );
     const beerInfos = await Promise.all(beerIds.map(x => (x.inError ? x : util.getBeerInfo(x.id, x.query)))).catch(util.onErrorRethrow);
+
+    for (var i = 0; i < beerInfo.length; i++) beerInfos[i].price = Number.parseInt(beerPrices[i]);
 
     const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
     util.sendDelayedResponse(message, payload.response_url);
