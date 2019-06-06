@@ -85,7 +85,7 @@ const handler = async function(payload, res) {
     );
     const beerInfos = await Promise.all(beerIds.map(x => (x.inError ? x : util.getBeerInfo(x.id, x.query)))).catch(util.onErrorRethrow);
 
-    for (var i = 0; i < beerInfo.length; i++) beerInfos[i].price = Number.parseInt(beerPrices[i]);
+    for (var i = 0; i < beerInfos.length; i++) beerInfos[i].price = Number.parseInt(beerPrices[i]);
 
     const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
     util.sendDelayedResponse(message, payload.response_url);
