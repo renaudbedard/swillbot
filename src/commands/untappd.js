@@ -38,7 +38,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
   for (let beerInfo of beerInfos) {
     let ratingString = `${util.getRatingString(beerInfo.rating_score)} (${beerInfo.rating_count} ratings)`;
     if (beerInfo.price) {
-      ratingString.text = `${ratingString.text} — ${(beerInfo.rating_score / beerInfo.price).toFixed(2)} :fullbeer:/:dollar:`;
+      ratingString = `${ratingString} — ${(beerInfo.rating_score / beerInfo.price).toFixed(2)} :fullbeer:/:dollar:`;
     }
     let attachment = {
       color: "#ffcc00",
