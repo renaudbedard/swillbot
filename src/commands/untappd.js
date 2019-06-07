@@ -6,6 +6,14 @@
 const util = require("../util");
 
 /**
+ * @param {Number} rating An untappd rating from 0 to 5
+ * @return {Number} The exponential rating centered on 3.75
+ */
+function exponentialRating(rating) {
+  return - (4.0 / 15.0) * rating / (rating - 4.75);
+}
+
+/**
  * @param {string} source The user ID that made the request
  * @param {string} query The original request
  * @param {object[]} beerInfos Untappd's beer info
@@ -38,7 +46,8 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
   for (let beerInfo of beerInfos) {
     let ratingString = `${util.getRatingString(beerInfo.rating_score)} (${beerInfo.rating_count} ratings)`;
     if (beerInfo.price) {
-      ratingString = `${ratingString} — ${((beerInfo.rating_score * beerInfo.rating_score) / beerInfo.price).toFixed(2)} :fullbeer:/:dollar:`;
+      const ratingPerDollar = exponentialRating(beerInfo.rating_score) / (beerInfo.price / 4.0);
+      ratingString = `${ratingString} — *${ratingPerDollar.toFixed(2)}* :fullbeer:/:dollar:`;
     }
     let attachment = {
       color: "#ffcc00",
