@@ -10,7 +10,7 @@ const util = require("../util");
  * @return {Number} The exponential rating centered on 3.75
  */
 function exponentialRating(rating) {
-  return - (4.0 / 15.0) * rating / (rating - 4.75);
+  return -rating / (3.0 * (x - 5.0));
 }
 
 /**
