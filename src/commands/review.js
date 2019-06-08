@@ -353,11 +353,15 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     attachments: []
   };
 
+  let sourceText;
+  if (source == "@everyone" || source == "@here" || source == "@channel") sourceText = source;
+  else sourceText = `<@${source}>`;
+
   let attachment = {
     color: "#ffcc00",
     title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
     thumb_url: beerInfo.beer_label,
-    pretext: `<@${source}>: \`/review ${query}\``,
+    pretext: `${sourceText}: \`/review ${query}\``,
     text: ""
   };
 
