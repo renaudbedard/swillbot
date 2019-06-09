@@ -280,7 +280,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         //  console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
         //}
 
-        console.log(`upserted beer id ${item.beer.bid} - recent checkin timestamp = ${recentCheckinTimestamp}`);
+        //console.log(`upserted beer id ${item.beer.bid} - recent checkin timestamp = ${recentCheckinTimestamp}, count = ${item.count}`);
         upsertedCount++;
 
         if (item.beer.bid == beerId) {
