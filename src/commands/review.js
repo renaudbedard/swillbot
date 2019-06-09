@@ -59,9 +59,10 @@ async function getUntappdUser(slackUserId) {
  * @param {string} beerName The beer name
  * @param {number=} parentId The beer ID of the parent, if this is a vintage beer
  * @param {integer[]} vintageIds The beer IDs of the child vintages, if any
+ * @param {boolean} fuzzyGather Whether to accept all fuzzy matches
  * @return {object[]} The Untappd checkins
  */
-async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
+async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzzyGather) {
   //console.log(`userName = ${userName}, beerId = ${beerId}`);
 
   // DEBUG DROP
@@ -94,18 +95,21 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
     `Find beer reviews for user ${userInfo.name} and beer ID ${beerId}`
   );
 
+  let gatheredReviewInfos = [];
   let reviewInfo;
   if (result.rows.length == 1) {
     // force-recache the batch around that review's rank
     console.log(`[${userInfo.name}] found the beer check-in; will force-recache`);
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId, result.rows[0].rank);
+    if (reviewInfo != null) gatheredReviewInfos.push(reviewInfo);
   } else {
     console.log(`[${userInfo.name}] could not find the beer check-in; will fetch`);
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
+    if (reviewInfo != null) gatheredReviewInfos.push(reviewInfo);
   }
 
   // vintages/variants
-  if (reviewInfo == null && (parentId != null || vintageIds.length > 0)) {
+  if ((reviewInfo == null || fuzzyGather) && (parentId != null || vintageIds.length > 0)) {
     console.log(`[${userInfo.name}] trying to match parentId ${parentId} or vintage IDs [${vintageIds}]...`);
     const parentResult = await util.tryPgQuery(
       null,
@@ -119,11 +123,12 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
     if (parentResult.rows.length > 0) {
       console.log(`[${userInfo.name}] matched '${beerName}' as '${parentResult.rows[0].beer_name}' (rank ${parentResult.rows[0].rank})`);
       reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, parentResult.rows[0].rank);
+      if (reviewInfo != null) gatheredReviewInfos.push(reviewInfo);
     }
   }
 
   // last resort : string matching
-  if (reviewInfo == null) {
+  if (reviewInfo == null || fuzzyGather) {
     console.log(`[${userInfo.name}] trying to string match beer '${beerName}'...`);
     const fuzzyResult = await util.tryPgQuery(
       null,
@@ -135,8 +140,16 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
     );
 
     if (fuzzyResult.rows.length > 0) {
-      console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
-      reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
+      if (fuzzyGather) {
+        for (let i = 0; i < fuzzyResult.rows.length; i++) {
+          console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[i].beer_name}'`);
+          reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[i].beer_id, fuzzyResult.rows[i].rank);
+          gatheredReviewInfos.push(reviewInfo);
+        }
+      } else {
+        console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
+        reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
+      }
     }
     if (reviewInfo == null) {
       console.log(`[${userInfo.name}] not found! we tried...`);
@@ -145,9 +158,15 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds) {
   }
 
   // separate request for the check-in comment
-  [reviewInfo.checkin_comment, reviewInfo.checkin_photo] = await getCheckinComment(reviewInfo.recent_checkin_id);
-
-  return reviewInfo;
+  if (fuzzyGather) {
+    for (let ri of gatheredReviewInfos) {
+      [ri.checkin_comment, ri.checkin_photo] = await getCheckinComment(ri.recent_checkin_id);
+    }
+    return gatheredReviewInfos;
+  } else {
+    [reviewInfo.checkin_comment, reviewInfo.checkin_photo] = await getCheckinComment(reviewInfo.recent_checkin_id);
+    return [reviewInfo];
+  }
 }
 
 /**
@@ -382,23 +401,26 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     }
 
     const untappdUser = users[i].name;
-    const reviewInfo = reviews[i];
-    const ratingString = util.getRatingString(reviewInfo.rating);
+    const reviewInfos = reviews[i];
 
-    // is this a fuzzy match?
-    if (reviewInfo.beer_id != beerInfo.bid) {
-      attachment.text += `_Vintage or variant : *${reviewInfo.beer_name}*_\n`;
+    for (let reviewInfo of reviewInfos) {
+      const ratingString = util.getRatingString(reviewInfo.rating);
+
+      // is this a fuzzy match?
+      if (reviewInfo.beer_id != beerInfo.bid) {
+        attachment.text += `_Vintage or variant : *${reviewInfo.beer_name}*_\n`;
+      }
+
+      attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
+      attachment.text += `\n${reviewInfo.checkin_comment}`;
+
+      if (reviewInfo.checkin_photo !== null) attachment.thumb_url = reviewInfo.checkin_photo;
+
+      const date = reviewInfo.recent_checkin_timestamp;
+      const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+
+      attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
     }
-
-    attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
-    attachment.text += `\n${reviewInfo.checkin_comment}`;
-
-    if (reviewInfo.checkin_photo !== null) attachment.thumb_url = reviewInfo.checkin_photo;
-
-    const date = reviewInfo.recent_checkin_timestamp;
-    const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-
-    attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
   }
 
   if (!skipAttachment) {
@@ -412,6 +434,7 @@ const handler = async function(payload, res) {
   let slackUser = payload.user_id;
   let untappdUsers = [];
   let query = payload.text;
+  let fuzzyGather = false;
 
   // look for special tags
   if (payload.text.indexOf("<!channel>") > -1 || payload.text.indexOf("<!everyone>") > -1 || payload.text.indexOf("<!here>") > -1) {
@@ -421,6 +444,11 @@ const handler = async function(payload, res) {
   } else if (payload.text.indexOf("@") > -1) {
     slackUser = payload.text.slice(payload.text.indexOf("@") + 1, payload.text.indexOf("|"));
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
+  }
+
+  if (query.indexOf("~") != -1) {
+    fuzzyGather = true;
+    query = query.replace("~", "");
   }
 
   try {
@@ -441,11 +469,11 @@ const handler = async function(payload, res) {
 
     const beerName = `${beerInfo.brewery.brewery_name} - ${beerInfo.beer_name}`;
 
-    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId.id, beerName, parentId, vintageIds))).catch(
+    const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId.id, beerName, parentId, vintageIds, fuzzyGather))).catch(
       util.onErrorRethrow
     );
 
-    if (reviews.every(x => x == null)) {
+    if (reviews.every(x => x == null || x.length == 0)) {
       const error = {
         source: `Looking for beer ID in checkins`,
         message: `Requested users have not tried \`${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}\` yet!`
