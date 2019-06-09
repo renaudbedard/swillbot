@@ -403,7 +403,9 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     const untappdUser = users[i].name;
     const reviewInfos = reviews[i];
 
+    let firstReview = true;
     for (let reviewInfo of reviewInfos) {
+      if (!firstReview) attachment.text += "\n";
       const ratingString = util.getRatingString(reviewInfo.rating);
 
       // is this a fuzzy match?
@@ -420,6 +422,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
       const dateString = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
 
       attachment.text += `\n\t- _${untappdUser}_, <https://untappd.com/user/${untappdUser}/checkin/${reviewInfo.recent_checkin_id}|${dateString}>`;
+      firstReview = false;
     }
   }
 
