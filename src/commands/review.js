@@ -97,15 +97,20 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
 
   let gatheredReviewInfos = [];
   let reviewInfo;
+
+  const tryPushResult = result => {
+    if (result != null && !gatheredReviewInfos.some(x => x.beer_id == result.beer_id)) gatheredReviewInfos.push(result);
+  };
+
   if (result.rows.length == 1) {
     // force-recache the batch around that review's rank
     console.log(`[${userInfo.name}] found the beer check-in; will force-recache`);
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId, result.rows[0].rank);
-    if (reviewInfo != null) gatheredReviewInfos.push(reviewInfo);
+    tryPushResult(reviewInfo);
   } else {
     console.log(`[${userInfo.name}] could not find the beer check-in; will fetch`);
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId);
-    if (reviewInfo != null) gatheredReviewInfos.push(reviewInfo);
+    tryPushResult(reviewInfo);
   }
 
   // vintages/variants
@@ -123,7 +128,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
     if (parentResult.rows.length > 0) {
       console.log(`[${userInfo.name}] matched '${beerName}' as '${parentResult.rows[0].beer_name}' (rank ${parentResult.rows[0].rank})`);
       reviewInfo = await findAndCacheUserBeers(userInfo, parentResult.rows[0].beer_id, parentResult.rows[0].rank);
-      if (reviewInfo != null) gatheredReviewInfos.push(reviewInfo);
+      tryPushResult(reviewInfo);
     }
   }
 
@@ -144,7 +149,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
         for (let i = 0; i < fuzzyResult.rows.length; i++) {
           console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[i].beer_name}'`);
           reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[i].beer_id, fuzzyResult.rows[i].rank);
-          gatheredReviewInfos.push(reviewInfo);
+          tryPushResult(reviewInfo);
         }
       } else {
         console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
@@ -405,7 +410,10 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
     let firstReview = true;
     for (let reviewInfo of reviewInfos) {
-      if (!firstReview) attachment.text += "\n";
+      if (!firstReview) {
+        slackMessage.attachments.push(attachment);
+        attachment = { color: "#ffcc00", text: "" };
+      }
       const ratingString = util.getRatingString(reviewInfo.rating);
 
       // is this a fuzzy match?
