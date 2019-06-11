@@ -107,7 +107,7 @@ const handler = async function(payload, res) {
     // we're done!
 
     // DEBUG
-    for (var query of splitText) console.log(query);
+    //for (var query of splitText) console.log(query);
 
     const beerQueries = splitText.map(x => x.split("$")[0]);
     const beerPrices = splitText.map(x => x.split("$")[1]);
