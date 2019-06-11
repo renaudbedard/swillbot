@@ -83,7 +83,7 @@ const handler = async function(payload, res) {
     let openBraceIndex = text.indexOf("(", 0);
     let closeBraceIndex = 0;
     do {
-      const commaIndex = text.indexOf(",", 0);
+      let commaIndex = text.indexOf(",", 0);
       if (commaIndex == -1) commaIndex = text.length;
       if (openBraceIndex != -1 && openBraceIndex < commaIndex) {
         // this query has a beer group
