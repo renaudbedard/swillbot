@@ -84,7 +84,7 @@ const handler = async function(payload, res) {
     let closeBraceIndex = 0;
     do {
       const commaIndex = text.indexOf(",", 0);
-      if (commaIndex == -1) commaIndex = queryText.length;
+      if (commaIndex == -1) commaIndex = text.length;
       if (openBraceIndex != -1 && openBraceIndex < commaIndex) {
         // this query has a beer group
         const brewery = text.substring(queryStart, openIndex).trim();
@@ -99,7 +99,7 @@ const handler = async function(payload, res) {
         textRegion = text.substring(queryStart, commaIndex - queryStart).trim();
       }
       queryStart = commaIndex + 1;
-    } while (commaIndex < queryText.length);
+    } while (commaIndex < text.length);
     // we're done!
 
     // DEBUG
