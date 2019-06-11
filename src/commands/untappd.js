@@ -96,7 +96,8 @@ const handler = async function(payload, res) {
         for (var beer of beers) splitText.push(`${brewery} ${beer}`);
       } else {
         // this query does not have a beer group
-        textRegion = text.substring(queryStart, commaIndex - queryStart).trim();
+        queryText = text.substring(queryStart, commaIndex - queryStart).trim();
+        if (queryText.length > 0) splitText.push(queryText);
       }
       queryStart = commaIndex + 1;
     } while (commaIndex < text.length);
