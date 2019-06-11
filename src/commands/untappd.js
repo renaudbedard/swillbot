@@ -75,9 +75,35 @@ const handler = async function(payload, res) {
     res.status(200).json(util.formatReceipt());
 
     // strip newlines and replace with spaces
-    payload.text = payload.text.replace(/[\n\r]/g, " ");
+    let text = payload.text.replace(/[\n\r]/g, " ");
 
-    const splitText = payload.text.split(",");
+    const splitText = [];
+    let queryText;
+    let queryStart = 0;
+    let openBraceIndex = text.indexOf("(", 0);
+    let closeBraceIndex = 0;
+    do {
+      const commaIndex = text.indexOf(",", 0);
+      if (commaIndex == -1) commaIndex = queryText.length;
+      if (openBraceIndex != -1 && openBraceIndex < commaIndex) {
+        // this query has a beer group
+        const brewery = text.substring(queryStart, openIndex).trim();
+        closeBraceIndex = text.indexOf(")", openIndex);
+        const beers = text
+          .substring(openBraceIndex + 1, closeBraceIndex - (openBraceIndex + 1))
+          .split(",")
+          .map(x => x.trim());
+        for (var beer of beers) splitText.push(`${brewery} ${beer}`);
+      } else {
+        // this query does not have a beer group
+        textRegion = text.substring(queryStart, commaIndex - queryStart).trim();
+      }
+      queryStart = commaIndex + 1;
+    } while (commaIndex < queryText.length);
+    // we're done!
+
+    // DEBUG
+    for (var query of splitText) console.log(query);
 
     const beerQueries = splitText.map(x => x.split("$")[0]);
     const beerPrices = splitText.map(x => x.split("$")[1]);
@@ -95,7 +121,7 @@ const handler = async function(payload, res) {
 
     for (var i = 0; i < beerInfos.length; i++) beerInfos[i].price = Number.parseInt(beerPrices[i]);
 
-    const message = formatBeerInfoSlackMessage(payload.user_id, payload.text, beerInfos);
+    const message = formatBeerInfoSlackMessage(payload.user_id, text, beerInfos);
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
     util.sendDelayedResponse(util.formatError(err), payload.response_url);
