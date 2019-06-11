@@ -89,8 +89,8 @@ const handler = async function(payload, res) {
       openBraceIndex = text.indexOf("(", queryStart);
       if (openBraceIndex != -1 && openBraceIndex < commaIndex) {
         // this query has a beer group
-        const brewery = text.substring(queryStart, openIndex).trim();
-        closeBraceIndex = text.indexOf(")", openIndex);
+        const brewery = text.substring(queryStart, openBraceIndex).trim();
+        closeBraceIndex = text.indexOf(")", openBraceIndex);
         const beers = text
           .substring(openBraceIndex + 1, closeBraceIndex)
           .split(",")
