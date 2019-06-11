@@ -92,13 +92,13 @@ const handler = async function(payload, res) {
         const brewery = text.substring(queryStart, openIndex).trim();
         closeBraceIndex = text.indexOf(")", openIndex);
         const beers = text
-          .substring(openBraceIndex + 1, closeBraceIndex - (openBraceIndex + 1))
+          .substring(openBraceIndex + 1, closeBraceIndex)
           .split(",")
           .map(x => x.trim());
         for (var beer of beers) splitText.push(`${brewery} ${beer}`);
       } else {
         // this query does not have a beer group
-        queryText = text.substring(queryStart, commaIndex - queryStart).trim();
+        queryText = text.substring(queryStart, commaIndex).trim();
         if (queryText.length > 0) splitText.push(queryText);
       }
       queryStart = commaIndex + 1;
