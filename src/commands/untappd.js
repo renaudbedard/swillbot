@@ -100,21 +100,21 @@ const handler = async function(payload, res) {
       commaIndex = text.indexOf(",", queryStart);
       if (commaIndex == -1) commaIndex = text.length;
       openBraceIndex = text.indexOf("(", queryStart);
-      closeBraceIndex = text.indexOf(")", openBraceIndex + 1);
-      if (openBraceIndex != -1 && openBraceIndex < commaIndex && commaIndex < closeBraceIndex) {
-        // this query has a beer group
+      if (openBraceIndex != -1 && openBraceIndex < commaIndex) {
+        // potential beer group
         const brewery = text.substring(queryStart, openBraceIndex).trim();
         // match count of opening and closing braces
         let openCount = 1;
         let lastSymbolIndex = openBraceIndex;
         while (openCount > 0) {
-          let result = indexOfFirstOf(text, ["(", ")", ","], lastSymbolIndex + 1);
-          if (result.symbol == "(") openCount++;
-          if (result.symbol == ")") openCount--;
+          let result = indexOfFirstOf(text, ["(", ")"], lastSymbolIndex + 1);
+          if (result.symbol == "(") { openCount++; console.log("found ("); }
+          if (result.symbol == ")") { openCount--; console.log("found )"); }
           if (result.index != -1) lastSymbolIndex = result.index;
           else {
             // unbalanced parenthesis! abort and ganbatte kudasai
-            lastSymbolIndex = closeBraceIndex;
+            console.log("unbalanced parenthesis!");
+            lastSymbolIndex = text.indexOf(")", openBraceIndex + 1);
             break;
           }
         }
@@ -123,8 +123,17 @@ const handler = async function(payload, res) {
           .substring(openBraceIndex + 1, closeBraceIndex)
           .split(",")
           .map(x => x.trim());
-        for (var beer of beers) splitText.push(`${brewery} ${beer}`);
-        queryStart = closeBraceIndex + 1;
+        if (beers.length > 1) {
+          // actual beer group
+          for (var beer of beers) splitText.push(`${brewery} ${beer}`);
+          commaIndex = text.indexOf(",", closeBraceIndex);
+          if (commaIndex == -1) commaIndex = text.length;
+        } else {
+          // this is most likely just a year tag; treat it as not-a-group
+          queryText = text.substring(queryStart, commaIndex).trim();
+          if (queryText.length > 0) splitText.push(queryText);
+        }
+        queryStart = commaIndex + 1;
       } else {
         // this query does not have a beer group
         queryText = text.substring(queryStart, commaIndex).trim();
