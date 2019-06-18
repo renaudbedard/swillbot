@@ -108,8 +108,8 @@ const handler = async function(payload, res) {
         let lastSymbolIndex = openBraceIndex;
         while (openCount > 0) {
           let result = indexOfFirstOf(text, ["(", ")"], lastSymbolIndex + 1);
-          if (result.symbol == "(") { openCount++; console.log("found ("); }
-          if (result.symbol == ")") { openCount--; console.log("found )"); }
+          if (result.symbol == "(") openCount++;
+          if (result.symbol == ")") openCount--;
           if (result.index != -1) lastSymbolIndex = result.index;
           else {
             // unbalanced parenthesis! abort and ganbatte kudasai
