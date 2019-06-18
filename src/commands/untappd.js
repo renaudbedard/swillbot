@@ -107,7 +107,7 @@ const handler = async function(payload, res) {
         let openCount = 1;
         let lastSymbolIndex = openBraceIndex;
         while (openCount > 0) {
-          let result = indexOfFirstOf(text, ["(", ")"], lastSymbolIndex + 1);
+          const result = indexOfFirstOf(text, ["(", ")"], lastSymbolIndex + 1);
           if (result.symbol == "(") openCount++;
           if (result.symbol == ")") openCount--;
           if (result.index != -1) lastSymbolIndex = result.index;
