@@ -284,8 +284,13 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         upsertedCount++;
 
         if (item.beer.bid == beerId) {
+          //console.log(
+          //  `[${userInfo.name}] found '${item.brewery.brewery_name} - ${item.beer.beer_name}' at rank ${currentRank} (expected ${fetchRank})`
+          //);
           console.log(
-            `[${userInfo.name}] found '${item.brewery.brewery_name} - ${item.beer.beer_name}' at rank ${currentRank} (expected ${fetchRank})`
+            `'${item.brewery.brewery_name} - ${item.beer.beer_name}' : had ${item.count} times, first ${item.first_had}, latest : ${
+              item.recent_created_at
+            }`
           );
           // mock a database result (faster than selecting it back)
           beerData = {
