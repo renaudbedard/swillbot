@@ -292,6 +292,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
               item.recent_created_at
             }`
           );
+          console.log(`full query : https://api.untappd.com/v4/user/beers/\$\{username\}, args = ${args}`);
           // mock a database result (faster than selecting it back)
           beerData = {
             username: userInfo.name,
