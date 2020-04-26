@@ -19,7 +19,11 @@ function scrapeWineInfo(query) {
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
       }
-      console.log(data);
+      //console.log(data);
+
+      // TODO: HTML parsing
+      //var parser = new DOMParser();
+      //var htmlDoc = parser.parseFromString(txt, 'text/html');
 
       resolve({
         query: query
