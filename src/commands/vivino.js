@@ -29,7 +29,8 @@ function scrapeWineInfo(query) {
       var imageLink = cardDiv
         .querySelector("figure.wine-card__image")
         .getAttribute("style")
-        .match(/url\(\/\/(.+)\)/g);
+        .match(/url\(\/\/(.+)\)/)[1];
+      imageLink = `http://${imageLink}`;
       var wineName = cardDiv.querySelector(".wine-card__name span").textContent.trim();
       var region = cardDiv.querySelector(".wine-card__region a").textContent;
       var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
