@@ -21,12 +21,26 @@ function scrapeWineInfo(query) {
       }
       //console.log(data);
 
-      // TODO: HTML parsing
-      //var parser = new DOMParser();
-      //var htmlDoc = parser.parseFromString(txt, 'text/html');
+      var parser = new DOMParser();
+      var htmlDoc = parser.parseFromString(data, "text/html");
+      var cardDiv = htmlDoc.querySelector(".search-results-list > div:first-child");
+      var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
+      var imageLink = /url\(\/\/(.+)\)/g.match(cardDiv.querySelector("figure.wine-card__image").getAttribute("style"));
+      var wineName = cardDiv.querySelector(".wine-card__name span").innerText;
+      var region = cardDiv.querySelector(".wine-card__region a:first-child").innerText;
+      var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').innerText;
+      var averageRating = parseFloat(cardDiv.querySelector(".average__number").innerText.replace(",", "."));
+      var ratingCount = parseInt(cardDiv.querySelector(".average__stars .text-micro").innerText.split(" ")[0]);
 
       resolve({
-        query: query
+        query: query,
+        name: wineName,
+        link: winePageLink,
+        rating_score: averageRating,
+        rating_count: ratingCount,
+        label_url: imageLink,
+        region: region,
+        country: country
       });
     });
 
@@ -71,7 +85,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     let attachment = {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
-      thumb_url: wineInfo.beer_label,
+      thumb_url: wineInfo.label_url,
       text: `${ratingString}\n_${wineInfo.region} — ${wineInfo.country}_`
     };
     if (wineInfos.length > 1) {
