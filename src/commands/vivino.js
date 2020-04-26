@@ -98,7 +98,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
   wineInfos.sort((a, b) => b.rating_score - a.rating_score);
 
   for (let wineInfo of wineInfos) {
-    let ratingString = `${util.getRatingString(wineInfo.rating_score)} (${wineInfo.rating_count} ratings)`;
+    let ratingString = `${util.getRatingString(wineInfo.rating_score, true)} (${wineInfo.rating_count} ratings)`;
     let attachment = {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
