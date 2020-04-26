@@ -10,10 +10,12 @@ const restClient = require("../rest-client");
 function scrapeWineInfo(query) {
   return new Promise((resolve, reject) => {
     let args = {
-      parameters: _.defaults({
-        q: encodeURIComponent(query).replace(/%20/g, "+")
-      })
+      parameters: {
+        q: query.replace(/ /g, "+")
+      }
     };
+
+    console.log(args);
 
     let req = restClient.get("https://www.vivino.com/search/wines", args, function(_, response) {
       console.log(response);
