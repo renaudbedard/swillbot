@@ -74,7 +74,9 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    const splitText = util.getQueries(payload.text);
+    // strip newlines and replace with spaces
+    let text = payloadText.replace(/[\n\r]/g, " ");
+    const splitText = util.getQueries(text);
 
     // DEBUG
     //for (var query of splitText) console.log(query);

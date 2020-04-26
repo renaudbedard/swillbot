@@ -83,7 +83,10 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    const wineQueries = splitText.map(x => x.split("$")[0]);
+    // strip newlines and replace with spaces
+    let text = payloadText.replace(/[\n\r]/g, " ");
+    const wineQueries = util.getQueries(text);
+
     const wineInfos = await Promise.all(wineQueries.map(x => scrapeWineInfo(x.trim())));
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineInfos);

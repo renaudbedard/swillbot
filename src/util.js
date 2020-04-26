@@ -19,10 +19,7 @@ const untappdParams = {
  * @param {string} payloadText The payload text
  * @return {string[]} The queries
  */
-function getQueries(payloadText) {
-  // strip newlines and replace with spaces
-  let text = payloadText.replace(/[\n\r]/g, " ");
-
+function getQueries(text) {
   const splitText = [];
   let queryText;
   let queryStart = 0;
