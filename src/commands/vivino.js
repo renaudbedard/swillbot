@@ -15,8 +15,12 @@ function scrapeWineInfo(query) {
       }
     };
 
-    let req = restClient.get("https://www.vivino.com/search/wines", args, function(_, response) {
-      console.log(response.text);
+    let req = restClient.get("https://www.vivino.com/search/wines", args, function(data, _) {
+      if (Buffer.isBuffer(data)) {
+        data = data.toString("utf8");
+      }
+      console.log(data);
+
       resolve({
         query: query
       });
