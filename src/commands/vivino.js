@@ -11,14 +11,14 @@ function scrapeWineInfo(query) {
   return new Promise((resolve, reject) => {
     let args = {
       parameters: {
-        q: query.replace(/ /g, "+")
+        q: query
       }
     };
 
     console.log(args);
 
-    let req = restClient.get("https://www.vivino.com/search/wines", args, function(_, response) {
-      console.log(response);
+    let req = restClient.get("https://www.vivino.com/search/wines", args, function(data, response) {
+      console.log(data);
       resolve({
         query: query
       });
