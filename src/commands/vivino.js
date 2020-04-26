@@ -26,7 +26,10 @@ function scrapeWineInfo(query) {
       const dom = new JSDOM(data);
       var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
       var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
-      var imageLink = /url\(\/\/(.+)\)/g.match(cardDiv.querySelector("figure.wine-card__image").getAttribute("style"));
+      var imageLink = cardDiv
+        .querySelector("figure.wine-card__image")
+        .getAttribute("style")
+        .match(/url\(\/\/(.+)\)/g);
       var wineName = cardDiv.querySelector(".wine-card__name span").innerText;
       var region = cardDiv.querySelector(".wine-card__region a:first-child").innerText;
       var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').innerText;
