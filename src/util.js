@@ -14,6 +14,19 @@ const untappdParams = {
   client_secret: config.UNTAPPD_CLIENT_SECRET
 };
 
+function indexOfFirstOf(haystack, needles, startIndex) {
+  let minIndex = Infinity;
+  let foundNeedle = null;
+  for (let needle of needles) {
+    let index = haystack.indexOf(needle, startIndex);
+    if (index != -1 && index < minIndex) {
+      minIndex = index;
+      foundNeedle = needle;
+    }
+  }
+  return { symbol: foundNeedle, index: minIndex == Infinity ? -1 : minIndex };
+}
+
 /**
  * Parses a beer query.
  * @param {string} text The payload text
