@@ -70,78 +70,11 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
   return slackMessage;
 }
 
-function indexOfFirstOf(haystack, needles, startIndex) {
-  let minIndex = Infinity;
-  let foundNeedle = null;
-  for (let needle of needles) {
-    let index = haystack.indexOf(needle, startIndex);
-    if (index != -1 && index < minIndex) {
-      minIndex = index;
-      foundNeedle = needle;
-    }
-  }
-  return { symbol: foundNeedle, index: minIndex == Infinity ? -1 : minIndex };
-}
-
 const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    // strip newlines and replace with spaces
-    let text = payload.text.replace(/[\n\r]/g, " ");
-
-    const splitText = [];
-    let queryText;
-    let queryStart = 0;
-    let openBraceIndex;
-    let closeBraceIndex = 0;
-    let commaIndex;
-    do {
-      commaIndex = text.indexOf(",", queryStart);
-      if (commaIndex == -1) commaIndex = text.length;
-      openBraceIndex = text.indexOf("(", queryStart);
-      if (openBraceIndex != -1 && openBraceIndex < commaIndex) {
-        // potential beer group
-        const brewery = text.substring(queryStart, openBraceIndex).trim();
-        // match count of opening and closing braces
-        let openCount = 1;
-        let lastSymbolIndex = openBraceIndex;
-        while (openCount > 0) {
-          const result = indexOfFirstOf(text, ["(", ")"], lastSymbolIndex + 1);
-          if (result.symbol == "(") openCount++;
-          if (result.symbol == ")") openCount--;
-          if (result.index != -1) lastSymbolIndex = result.index;
-          else {
-            // unbalanced parenthesis! abort and ganbatte kudasai
-            console.log("unbalanced parenthesis!");
-            lastSymbolIndex = text.indexOf(")", openBraceIndex + 1);
-            break;
-          }
-        }
-        closeBraceIndex = lastSymbolIndex;
-        const beers = text
-          .substring(openBraceIndex + 1, closeBraceIndex)
-          .split(",")
-          .map(x => x.trim());
-        if (beers.length > 1) {
-          // actual beer group
-          for (var beer of beers) splitText.push(`${brewery} ${beer}`);
-          commaIndex = text.indexOf(",", closeBraceIndex);
-          if (commaIndex == -1) commaIndex = text.length;
-        } else {
-          // this is most likely just a year tag; treat it as not-a-group
-          queryText = text.substring(queryStart, commaIndex).trim();
-          if (queryText.length > 0) splitText.push(queryText);
-        }
-        queryStart = commaIndex + 1;
-      } else {
-        // this query does not have a beer group
-        queryText = text.substring(queryStart, commaIndex).trim();
-        if (queryText.length > 0) splitText.push(queryText);
-        queryStart = commaIndex + 1;
-      }
-    } while (commaIndex < text.length);
-    // we're done!
+    const splitText = util.getQueries(payload.text);
 
     // DEBUG
     //for (var query of splitText) console.log(query);
