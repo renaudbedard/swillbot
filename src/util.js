@@ -16,7 +16,7 @@ const untappdParams = {
 
 /**
  * Parses a beer query.
- * @param {string} payloadText The payload text
+ * @param {string} text The payload text
  * @return {string[]} The queries
  */
 function getQueries(text) {
