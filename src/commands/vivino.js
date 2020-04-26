@@ -31,7 +31,7 @@ function scrapeWineInfo(query) {
         .getAttribute("style")
         .match(/url\(\/\/(.+)\)/g);
       var wineName = cardDiv.querySelector(".wine-card__name span").innerText;
-      var region = cardDiv.querySelector(".wine-card__region a:first-child").innerText;
+      var region = cardDiv.querySelector(".wine-card__region a").innerText;
       var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').innerText;
       var averageRating = parseFloat(cardDiv.querySelector(".average__number").innerText.replace(",", "."));
       var ratingCount = parseInt(cardDiv.querySelector(".average__stars .text-micro").innerText.split(" ")[0]);
