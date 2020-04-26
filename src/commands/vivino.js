@@ -6,6 +6,8 @@
 
 const util = require("../util");
 const restClient = require("../rest-client");
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
 
 function scrapeWineInfo(query) {
   return new Promise((resolve, reject) => {
@@ -21,9 +23,8 @@ function scrapeWineInfo(query) {
       }
       //console.log(data);
 
-      var parser = new DOMParser();
-      var htmlDoc = parser.parseFromString(data, "text/html");
-      var cardDiv = htmlDoc.querySelector(".search-results-list > div:first-child");
+      const dom = new JSDOM(data);
+      var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
       var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
       var imageLink = /url\(\/\/(.+)\)/g.match(cardDiv.querySelector("figure.wine-card__image").getAttribute("style"));
       var wineName = cardDiv.querySelector(".wine-card__name span").innerText;
