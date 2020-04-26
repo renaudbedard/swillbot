@@ -138,6 +138,7 @@ async function tryPgQuery(client, query, values, context) {
  * @return {string} The emoji string
  */
 function getRatingString(rating) {
+  if (isNaN(rating) || rating == 0) return "";
   let ratingString = "";
   for (let i = 0; i < Math.floor(rating); i++) ratingString += ":fullbeer:";
   let fraction = rating - Math.floor(rating);
