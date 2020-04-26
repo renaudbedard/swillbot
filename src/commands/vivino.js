@@ -10,6 +10,7 @@ const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
 function scrapeWineInfo(query) {
+  const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
       parameters: {
@@ -24,7 +25,17 @@ function scrapeWineInfo(query) {
       //console.log(data);
 
       const dom = new JSDOM(data);
+
       var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+
+      if (!cardDiv) {
+        reject({
+          source: context,
+          message: "Couldn't find matching wine!"
+        });
+        return;
+      }
+
       var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
       var imageLink = cardDiv
         .querySelector("figure.wine-card__image")
