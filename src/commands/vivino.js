@@ -85,13 +85,15 @@ function scrapeWineDetails(wineInfo) {
 
       var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
 
-      if (pageInfo) {
-        if (pageInfo.vintage.wine.grapes) {
-          wineInfo.grapes = pageInfo.vintage.wine.grapes.map(x => x.name).join(", ");
+      if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
+        const wineMetadata = pageInfo.vintage.wine;
+
+        if (wineMetadata.grapes) {
+          wineInfo.grapes = wineMetadata.grapes.map(x => x.name).join(", ");
         }
 
-        if (pageInfo.vintage.wine.type_id) {
-          switch (pageInfo.vintage.wine.type_id) {
+        if (wineMetadata.type_id) {
+          switch (wineMetadata.type_id) {
             case 1:
               wineInfo.type = "Red wine";
               break;
@@ -113,9 +115,9 @@ function scrapeWineDetails(wineInfo) {
           }
         }
 
-        if (wineInfo.rating_count == 0 && pageInfo.wine.statistics) {
-          wineInfo.rating_score = pageInfo.wine.statistics.ratings_average;
-          wineInfo.rating_count = pageInfo.wine.statistics.ratings_count;
+        if (wineInfo.rating_count == 0 && wineMetadata.statistics) {
+          wineInfo.rating_score = wineMetadata.statistics.ratings_average;
+          wineInfo.rating_count = wineMetadata.statistics.ratings_count;
           wineInfo.ratings_all_vintages = true;
         }
       }
