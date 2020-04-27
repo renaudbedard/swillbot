@@ -87,7 +87,7 @@ function scrapeWineDetails(wineInfo) {
 
       if (winePageInfo) {
         if (winePageInfo.vintage.wine.grapes) {
-          wineInfo.grapes = winePageInfo.vintage.wine.grapes.join(", ");
+          wineInfo.grapes = winePageInfo.vintage.wine.grapes.map(x => x.name).join(", ");
         }
 
         if (winePageInfo.vintage.wine.type_id) {
