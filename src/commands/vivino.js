@@ -83,17 +83,36 @@ function scrapeWineDetails(wineInfo) {
       const dom = new JSDOM(data, { runScripts: "dangerously" });
       console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
 
-      /*
-      var grapesElement = dom.window.document.querySelector(".wineFacts__container--eIljB a");
-      if (grapesElement) {
-        wineInfo.grapes = grapesElement.textContent;
-      }
+      var winePageInfo = dom.window.__PRELOADED_STATE__.winePageInformation;
 
-      var wineTypeElement = dom.window.document.querySelector("span.wineLocationHeader__wineType--14nrC");
-      if (wineTypeElement) {
-        wineInfo.type = wineTypeElement.childNodes[0].textContent;
+      if (winePageInfo) {
+        if (winePageInfo.vintage.wine.grapes) {
+          wineInfo.grapes = winePageInfo.vintage.wine.grapes.join(", ");
+        }
+
+        if (winePageInfo.vintage.wine.type_id) {
+          switch (winePageInfo.vintage.wine.type_id) {
+            case 1:
+              wineInfo.type = "Red wine";
+              break;
+            case 2:
+              wineInfo.type = "White wine";
+              break;
+            case 3:
+              wineInfo.type = "Sparkling wine";
+              break;
+            case 4:
+              wineInfo.type = "Rosé wine";
+              break;
+            case 5:
+              wineInfo.type = "Port";
+              break;
+            case 6:
+              wineInfo.type = "Dessert wine";
+              break;
+          }
+        }
       }
-      */
 
       resolve(wineInfo);
     });
