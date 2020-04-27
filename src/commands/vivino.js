@@ -67,6 +67,40 @@ function scrapeWineInfo(query) {
   });
 }
 
+function scrapeWineDetails(wineInfo) {
+  const context = `Fetching wine details for '${wineInfo.name}'`;
+  return new Promise((resolve, reject) => {
+    let args = {
+      parameters: {}
+    };
+
+    let req = restClient.get(wineInfo.link, args, function(data, _) {
+      if (Buffer.isBuffer(data)) {
+        data = data.toString("utf8");
+      }
+      //console.log(data);
+
+      const dom = new JSDOM(data);
+
+      var grapesElement = dom.window.document.querySelector(".wineFacts__container--eIljB a");
+      if (grapesElement) {
+        wineInfo.grapes = grapesElement.textContent;
+      }
+
+      var wineTypeElement = dom.window.document.querySelector("span.wineLocationHeader__wineType--14nrC");
+      if (wineTypeElement) {
+        wineInfo.type = wineTypeElement.childNodes[0].textContent;
+      }
+
+      resolve(wineInfo);
+    });
+
+    req.on("error", function(err) {
+      reject({ source: context, message: err.toString() });
+    });
+  });
+}
+
 /**
  * @param {string} source The user ID that made the request
  * @param {string} query The original request
@@ -99,14 +133,21 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
 
   for (let wineInfo of wineInfos) {
     let ratingString = `${util.getRatingString(wineInfo.rating_score, true)} (${wineInfo.rating_count} ratings)`;
+    let typeString = "";
+    if (wineInfo.type) {
+      typeString = `${wineInfo.type} from `;
+    }
     let attachment = {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
       thumb_url: wineInfo.label_url,
-      text: `${ratingString}\n_${wineInfo.region} — ${wineInfo.country}_`
+      text: `${ratingString}\n_${typeString}${wineInfo.region} — ${wineInfo.country}_`
     };
     if (wineInfos.length > 1) {
       attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
+    }
+    if (wineInfo.grapes) {
+      attachment.text = `${attachment.text}\n:grapes: ${wineInfo.grapes}`;
     }
     attachment.title = `${wineInfo.name}`;
 
@@ -126,7 +167,8 @@ const handler = async function(payload, res) {
     let text = payload.text.replace(/[\n\r]/g, " ");
     const wineQueries = util.getQueries(text);
 
-    const wineInfos = await Promise.all(wineQueries.map(x => scrapeWineInfo(x.trim())));
+    let wineInfos = await Promise.all(wineQueries.map(x => scrapeWineInfo(x.trim())));
+    wineInfos = await Promise.all(wineInfos.map(x => scrapeWineDetails(x)));
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineInfos);
 
