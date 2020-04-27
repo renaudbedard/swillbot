@@ -81,7 +81,7 @@ function scrapeWineDetails(wineInfo) {
 
       // this is very unsafe but oh well
       const dom = new JSDOM(data, { runScripts: "dangerously" });
-      console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
+      //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
 
       var winePageInfo = dom.window.__PRELOADED_STATE__.winePageInformation;
 
