@@ -78,10 +78,12 @@ function scrapeWineDetails(wineInfo) {
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
       }
-      console.log(data);
 
-      const dom = new JSDOM(data);
+      // this is very unsafe but oh well
+      const dom = new JSDOM(data, { runScripts: "dangerously" });
+      console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
 
+      /*
       var grapesElement = dom.window.document.querySelector(".wineFacts__container--eIljB a");
       if (grapesElement) {
         wineInfo.grapes = grapesElement.textContent;
@@ -91,6 +93,7 @@ function scrapeWineDetails(wineInfo) {
       if (wineTypeElement) {
         wineInfo.type = wineTypeElement.childNodes[0].textContent;
       }
+      */
 
       resolve(wineInfo);
     });
