@@ -83,7 +83,7 @@ function scrapeWineDetails(wineInfo) {
       const dom = new JSDOM(data, { runScripts: "dangerously" });
       //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
 
-      var winePageInfo = dom.window.__PRELOADED_STATE__.winePageInformation;
+      var winePageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
 
       if (winePageInfo) {
         if (winePageInfo.vintage.wine.grapes) {
