@@ -83,15 +83,15 @@ function scrapeWineDetails(wineInfo) {
       const dom = new JSDOM(data, { runScripts: "dangerously" });
       //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
 
-      var winePageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
+      var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
 
-      if (winePageInfo) {
-        if (winePageInfo.vintage.wine.grapes) {
-          wineInfo.grapes = winePageInfo.vintage.wine.grapes.map(x => x.name).join(", ");
+      if (pageInfo) {
+        if (pageInfo.vintage.wine.grapes) {
+          wineInfo.grapes = pageInfo.vintage.wine.grapes.map(x => x.name).join(", ");
         }
 
-        if (winePageInfo.vintage.wine.type_id) {
-          switch (winePageInfo.vintage.wine.type_id) {
+        if (pageInfo.vintage.wine.type_id) {
+          switch (pageInfo.vintage.wine.type_id) {
             case 1:
               wineInfo.type = "Red wine";
               break;
@@ -111,6 +111,12 @@ function scrapeWineDetails(wineInfo) {
               wineInfo.type = "Dessert wine";
               break;
           }
+        }
+
+        if (wineInfo.rating_count == 0 && pageInfo.wine.statistics) {
+          wineInfo.rating_score = pageInfo.wine.statistics.ratings_average;
+          wineInfo.rating_count = pageInfo.wine.statistics.ratings_count;
+          wineInfo.ratings_all_vintages = true;
         }
       }
 
@@ -154,7 +160,8 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
   wineInfos.sort((a, b) => b.rating_score - a.rating_score);
 
   for (let wineInfo of wineInfos) {
-    let ratingString = `${util.getRatingString(wineInfo.rating_score, true)} (${wineInfo.rating_count} ratings)`;
+    const ratingSuffix = wineInfo.ratings_all_vintages ? " [all vintages]" : "";
+    let ratingString = `${util.getRatingString(wineInfo.rating_score, true)} (${wineInfo.rating_count} ratings)${ratingSuffix}`;
     let typeString = "";
     if (wineInfo.type) {
       typeString = `${wineInfo.type} from `;
