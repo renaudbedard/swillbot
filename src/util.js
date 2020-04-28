@@ -138,11 +138,12 @@ async function tryPgQuery(client, query, values, context) {
  * @param {bool?} wineMode Whether to use wine emoji
  * @return {string} The emoji string
  */
-function getRatingString(rating, wineMode = false) {
+function getRatingString(rating, wineMode = false, wineType = null) {
   if (isNaN(rating) || rating == 0) return "";
   const emojiSuffix = wineMode ? "wine" : "beer";
+  const emojiPrefix = wineType ? wineType : "";
   let ratingString = "";
-  for (let i = 0; i < Math.floor(rating); i++) ratingString += `:full${emojiSuffix}:`;
+  for (let i = 0; i < Math.floor(rating); i++) ratingString += `:${emojiPrefix}full${emojiSuffix}:`;
   let fraction = rating - Math.floor(rating);
   if (fraction >= 0.75) ratingString += `:threequarter${emojiSuffix}:`;
   else if (fraction >= 0.5) ratingString += `:half${emojiSuffix}:`;

@@ -57,7 +57,8 @@ function scrapeWineInfo(query) {
         rating_count: ratingCount,
         label_url: imageLink,
         region: region,
-        country: country
+        country: country,
+        emojiPrefix: null
       });
     });
 
@@ -99,12 +100,14 @@ function scrapeWineDetails(wineInfo) {
               break;
             case 2:
               wineInfo.type = "White wine";
+              wineInfo.emojiPrefix = "white";
               break;
             case 3:
               wineInfo.type = "Sparkling wine";
               break;
             case 4:
               wineInfo.type = "Rosé wine";
+              wineInfo.emojiPrefix = "rosé";
               break;
             case 5:
               wineInfo.type = "Port";
@@ -163,7 +166,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
 
   for (let wineInfo of wineInfos) {
     const ratingSuffix = wineInfo.ratings_all_vintages ? " [all vintages]" : "";
-    let ratingString = `${util.getRatingString(wineInfo.rating_score, true)} (${wineInfo.rating_count} ratings)${ratingSuffix}`;
+    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)${ratingSuffix}`;
     let typeString = "";
     if (wineInfo.type) {
       typeString = `${wineInfo.type} from `;
