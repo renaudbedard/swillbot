@@ -145,9 +145,9 @@ function getRatingString(rating, wineMode = false, wineType = null) {
   let ratingString = "";
   for (let i = 0; i < Math.floor(rating); i++) ratingString += `:${emojiPrefix}full${emojiSuffix}:`;
   let fraction = rating - Math.floor(rating);
-  if (fraction >= 0.75) ratingString += `:threequarter${emojiSuffix}:`;
-  else if (fraction >= 0.5) ratingString += `:half${emojiSuffix}:`;
-  else if (fraction >= 0.25) ratingString += `:quarter${emojiSuffix}:`;
+  if (fraction >= 0.75) ratingString += `:${emojiPrefix}threequarter${emojiSuffix}:`;
+  else if (fraction >= 0.5) ratingString += `:${emojiPrefix}half${emojiSuffix}:`;
+  else if (fraction >= 0.25) ratingString += `:${emojiPrefix}quarter${emojiSuffix}:`;
   ratingString += ` *${rating}*`;
   return ratingString;
 }
