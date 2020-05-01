@@ -109,10 +109,10 @@ function scrapeWineDetails(wineInfo) {
               wineInfo.type = "Rosé wine";
               wineInfo.emojiPrefix = "rosé";
               break;
-            case 5:
-              wineInfo.type = "Port";
+            case 24:
+              wineInfo.type = "Fortified wine";
               break;
-            case 6:
+            case 7:
               wineInfo.type = "Dessert wine";
               break;
           }
