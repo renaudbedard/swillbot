@@ -45,6 +45,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
 
   for (let beerInfo of beerInfos) {
     let ratingString = `${util.getRatingString(beerInfo.rating_score)} (${beerInfo.rating_count} ratings)`;
+    let weightedRatingString = `${util.getRatingString(beerInfo.weighted_rating_score)} (weighted average)`;
     if (beerInfo.price) {
       const ratingPerDollar = exponentialRating(beerInfo.rating_score) / (beerInfo.price / 4.0);
       ratingString = `${ratingString} — *${ratingPerDollar.toFixed(2)}* :fullbeer:/:dollar:`;
@@ -53,7 +54,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
       color: "#ffcc00",
       title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
       thumb_url: beerInfo.beer_label,
-      text: `${ratingString}\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
+      text: `${ratingString}\n${weightedRatingString}\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV — ${beerInfo.beer_ibu || 0} IBU_`
     };
     if (beerInfos.length > 1) {
       attachment.text = `:mag: \`${beerInfo.query}\`\n${attachment.text}`;
