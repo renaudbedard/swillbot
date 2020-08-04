@@ -148,7 +148,7 @@ function getRatingString(rating, wineMode = false, wineType = null) {
   if (fraction >= 0.75) ratingString += `:${emojiPrefix}threequarter${emojiSuffix}:`;
   else if (fraction >= 0.5) ratingString += `:${emojiPrefix}half${emojiSuffix}:`;
   else if (fraction >= 0.25) ratingString += `:${emojiPrefix}quarter${emojiSuffix}:`;
-  ratingString += ` *${rating}*`;
+  ratingString += ` *${rating.toFixed(2)}*`;
   return ratingString;
 }
 

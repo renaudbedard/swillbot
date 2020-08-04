@@ -44,7 +44,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
   beerInfos.sort((a, b) => b.rating_score - a.rating_score);
 
   for (let beerInfo of beerInfos) {
-    let ratingString = `${util.getRatingString(beerInfo.rating_score)} (*${beerInfo.weighted_rating_score}* weighted) (${beerInfo.rating_count} ratings)`;
+    let ratingString = `${util.getRatingString(beerInfo.rating_score)} (*${beerInfo.weighted_rating_score.toFixed(2)}* weighted) (${beerInfo.rating_count} ratings)`;
     if (beerInfo.price) {
       const ratingPerDollar = exponentialRating(beerInfo.rating_score) / (beerInfo.price / 4.0);
       ratingString = `${ratingString} — *${ratingPerDollar.toFixed(2)}* :fullbeer:/:dollar:`;
