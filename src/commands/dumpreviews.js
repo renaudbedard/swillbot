@@ -67,10 +67,20 @@ function formatSlackMessage(reviewText) {
     attachments: []
   };
 
-  let attachment = {
-    color: "#ffcc00",
-    text: reviewText.filter(x => x != null && x.trim().length > 0).join(`\n`)
-  };
+  var filteredReviews = reviewText.filter(x => x != null && x.trim().length > 0);
+  let attachment = {};
+
+  if (filteredReviews.length == 0) {
+    attachment = {
+      color: "#ff0000",
+      text: "Untappd API Limit Hit!"
+    };
+  } else {
+    attachment = {
+      color: "#ffcc00",
+      text: filteredReviews.join(`\n`)
+    };
+  }
 
   slackMessage.attachments.push(attachment);
 
