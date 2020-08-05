@@ -90,13 +90,14 @@ const handler = async function(payload, res) {
   let untappdUser = null;
   let startFrom = 0;
   let limit = 100;
+  let query = payload.text;
 
   if (payload.text.indexOf("@") > -1) {
     slackUser = payload.text.slice(payload.text.indexOf("@") + 1, payload.text.indexOf("|"));
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
   }
 
-  var queryParts = payload.text.split(" ");
+  var queryParts = query.split(" ");
 
   startFrom = parseInt(queryParts[0]);
   if (queryParts.length == 2) {
