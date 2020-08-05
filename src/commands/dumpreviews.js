@@ -48,21 +48,14 @@ function getCheckinComment(checkinId) {
     };
     let req = restClient.get("https://api.untappd.com/v4/checkin/view/${checkinId}", args, function(data, _) {
       if (!data.response.checkin) {
-        console.log(data.response);
-        reject({
-          source: `Get check-in comment for #${checkinId}`,
-          message: "Couldn't find matching check-in!"
-        });
+        resolve("");
       } else {
         let checkin = data.response.checkin;
-        resolve([checkin.checkin_comment]);
+        resolve(checkin.checkin_comment);
       }
     });
     req.on("error", function(err) {
-      reject({
-        source: `Get check-in comment for #${checkinId}`,
-        message: err.toString()
-      });
+      resolve("");
     });
   });
 }
@@ -76,7 +69,7 @@ function formatSlackMessage(reviewText) {
 
   let attachment = {
     color: "#ffcc00",
-    text: reviewText.join(`\n`)
+    text: reviewText.where(x => x != null && x.trim().length > 0).join(`\n`)
   };
 
   slackMessage.attachments.push(attachment);
