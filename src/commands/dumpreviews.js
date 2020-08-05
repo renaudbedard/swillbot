@@ -69,7 +69,7 @@ function formatSlackMessage(reviewText) {
 
   let attachment = {
     color: "#ffcc00",
-    text: reviewText.where(x => x != null && x.trim().length > 0).join(`\n`)
+    text: reviewText.filter(x => x != null && x.trim().length > 0).join(`\n`)
   };
 
   slackMessage.attachments.push(attachment);
