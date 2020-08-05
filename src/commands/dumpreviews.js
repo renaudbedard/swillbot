@@ -55,8 +55,7 @@ function getCheckinComment(checkinId) {
         });
       } else {
         let checkin = data.response.checkin;
-        if (checkin.media.count > 0) resolve([checkin.checkin_comment, checkin.media.items[0].photo.photo_img_sm]);
-        else resolve([checkin.checkin_comment, null]);
+        resolve([checkin.checkin_comment, null]);
       }
     });
     req.on("error", function(err) {
@@ -91,8 +90,6 @@ const handler = async function(payload, res) {
   let startFrom = 0;
   let limit = 100;
   let query = payload.text;
-
-  console.log(query);
 
   if (payload.text.indexOf("@") > -1) {
     slackUser = payload.text.slice(payload.text.indexOf("@") + 1, payload.text.indexOf("|"));
