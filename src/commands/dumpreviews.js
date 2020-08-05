@@ -55,7 +55,7 @@ function getCheckinComment(checkinId) {
         });
       } else {
         let checkin = data.response.checkin;
-        resolve([checkin.checkin_comment, null]);
+        resolve([checkin.checkin_comment]);
       }
     });
     req.on("error", function(err) {
