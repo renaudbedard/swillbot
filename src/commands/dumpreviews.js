@@ -92,6 +92,8 @@ const handler = async function(payload, res) {
   let limit = 100;
   let query = payload.text;
 
+  console.log(query);
+
   if (payload.text.indexOf("@") > -1) {
     slackUser = payload.text.slice(payload.text.indexOf("@") + 1, payload.text.indexOf("|"));
     query = payload.text.slice(payload.text.indexOf(" ")).trim();
