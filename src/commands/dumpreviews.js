@@ -36,14 +36,10 @@ async function getUntappdUser(slackUserId) {
   };
 }
 
-/**
- * @param {int} checkinId The ID of the check-in
- * @return {string} The check-in comment for that ID
- */
-function getCheckinComment(checkinId) {
+function getCheckinComment(row) {
   return new Promise((resolve, reject) => {
     let args = {
-      path: { checkinId: checkinId },
+      path: { checkinId: row.recent_checkin_id },
       parameters: util.untappdParams
     };
     let req = restClient.get("https://api.untappd.com/v4/checkin/view/${checkinId}", args, function(data, _) {
@@ -51,7 +47,7 @@ function getCheckinComment(checkinId) {
         resolve("");
       } else {
         let checkin = data.response.checkin;
-        resolve(checkin.checkin_comment);
+        resolve({ id: row.row_number, review: checkin.checkin_comment });
       }
     });
     req.on("error", function(err) {
@@ -60,14 +56,14 @@ function getCheckinComment(checkinId) {
   });
 }
 
-function formatSlackMessage(reviewText) {
+function formatSlackMessage(checkinComments) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
     attachments: []
   };
 
-  var filteredReviews = reviewText.filter(x => x != null && x.trim().length > 0);
+  var filteredReviews = checkinComments.filter(x => x != null && x.review != null && x.review.trim().length > 0);
   let attachment = {};
 
   if (filteredReviews.length == 0) {
@@ -78,7 +74,7 @@ function formatSlackMessage(reviewText) {
   } else {
     attachment = {
       color: "#ffcc00",
-      text: filteredReviews.join(`\n`)
+      text: filteredReviews.map(x => `${x.id} : ${x.review}`).join(`\n`)
     };
   }
 
@@ -113,18 +109,19 @@ const handler = async function(payload, res) {
 
     const result = await util.tryPgQuery(
       null,
-      `select recent_checkin_id
+      `select row_number() over (order by recent_checkin_id), recent_checkin_id
       from user_reviews 
       where username = $1
+      order by recent_checkin_id
       limit $2
       offset $3`,
       [untappdUser.name, limit, startFrom],
-      `Whatever`
+      `Fetching checkin IDs for user`
     );
 
-    let reviewText = await Promise.all(result.rows.map(row => getCheckinComment(row.recent_checkin_id)));
+    let checkinComments = await Promise.all(result.rows.map(row => getCheckinComment(row)));
 
-    const slackMessage = formatSlackMessage(reviewText);
+    const slackMessage = formatSlackMessage(checkinComments);
 
     util.sendDelayedResponse(slackMessage, payload.response_url);
   } catch (err) {
