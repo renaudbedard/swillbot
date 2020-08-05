@@ -100,7 +100,7 @@ const handler = async function(payload, res) {
 
   startFrom = parseInt(queryParts[0]);
   if (queryParts.length == 2) {
-    limit = parseInt(queryParts[1]);
+    limit = min(parseInt(queryParts[1]), 100);
   }
 
   try {
