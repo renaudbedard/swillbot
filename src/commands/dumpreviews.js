@@ -129,4 +129,4 @@ const handler = async function(payload, res) {
   }
 };
 
-module.exports = { handler: handler, name: "review" };
+module.exports = { handler: handler, name: "dumpreviews" };
