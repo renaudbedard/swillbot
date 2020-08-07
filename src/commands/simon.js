@@ -3397,7 +3397,7 @@ function randn_bm(prng, min, max, skew) {
   let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 
   num = num / 10.0 + 0.5; // Translate to 0 -> 1
-  if (num > 1 || num < 0) num = randn_bm(prngm, min, max, skew); // resample between 0 and 1 if out of range
+  if (num > 1 || num < 0) num = randn_bm(prng, min, max, skew); // resample between 0 and 1 if out of range
   num = Math.pow(num, skew); // Skew
   num *= max - min; // Stretch to fill range
   num += min; // offset to min
@@ -3427,7 +3427,12 @@ function formatReviewSlackMessage(source, query, beerInfo) {
   var prng = seedrandom(attachment.title);
 
   let reviewText = simonDb[Math.floor(prng() * simonDb.length)];
-  let rating = Math.round(randn_bm(prng, 2.5, 5.0, 0.5) * 10) / 10;
+
+  let rating;
+  for (let i = 0; i < 100; i++) {
+    rating = Math.round(randn_bm(prng, 2.5, 5.0, 0.5) * 10) / 10;
+    console.log(rating);
+  }
 
   const ratingString = util.getRatingString(rating);
 
