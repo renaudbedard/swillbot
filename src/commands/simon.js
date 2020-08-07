@@ -5,6 +5,7 @@
 "use strict";
 
 const util = require("../util");
+const seedrandom = require("seedrandom");
 
 const simonDb = [
   "Belle mousse moyenne, blé pas que dans mes attentes, légère acidité subtile.",
@@ -1369,7 +1370,7 @@ function formatReviewSlackMessage(source, query, beerInfo) {
   if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
   else attachment.title = `${beerInfo.beer_name}`;
 
-  var prng = new Math.seedrandom(attachment.title);
+  var prng = seedrandom(attachment.title);
 
   let rating = prng() * 2.5 + 2.5;
   let reviewText = simonDb[Math.floor(prng() * simonDb.length)];
