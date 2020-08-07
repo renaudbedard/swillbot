@@ -1369,8 +1369,10 @@ function formatReviewSlackMessage(source, query, beerInfo) {
   if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
   else attachment.title = `${beerInfo.beer_name}`;
 
-  let rating = Math.random() * 2.5 + 2.5;
-  let reviewText = simonDb[Math.floor(Math.random() * simonDb.length)];
+  var prng = new Math.seedrandom(attachment.title);
+
+  let rating = prng() * 2.5 + 2.5;
+  let reviewText = simonDb[Math.floor(prng() * simonDb.length)];
 
   const ratingString = util.getRatingString(rating);
 
