@@ -3430,7 +3430,7 @@ function formatReviewSlackMessage(source, query, beerInfo) {
 
   let rating;
   for (let i = 0; i < 100; i++) {
-    rating = Math.round(randn_bm(prng, 2.5, 5.0, 1.5) * 10) / 10;
+    rating = Math.round((prng() * 2.5 + 2.5) * 10) / 10;
     console.log(rating);
   }
 
