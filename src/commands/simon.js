@@ -3427,7 +3427,7 @@ function formatReviewSlackMessage(source, query, beerInfo) {
   var prng = seedrandom(attachment.title);
 
   let reviewText = simonDb[Math.floor(prng() * simonDb.length)];
-  let rating = randn_bm(prng, 2.5, 5.0, 0.25);
+  let rating = randn_bm(prng, 2.5, 5.0, 0.5).toFixed(1);
 
   const ratingString = util.getRatingString(rating);
 
