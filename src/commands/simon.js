@@ -1361,16 +1361,13 @@ function formatReviewSlackMessage(source, query, beerInfo) {
   let attachment = {
     color: "#ffcc00",
     title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
-    thumb_url: beerInfo.beer_label,
+    thumb_url: "https://ca.slack-edge.com/TBLMUG0RE-UBMBJBG2X-fb0c6bb231a0-512",
     pretext: `<@${source}>: \`/simon ${strippedQuery}\``,
     text: ""
   };
 
   if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
   else attachment.title = `${beerInfo.beer_name}`;
-
-  slackMessage.attachments.push(attachment);
-  attachment = { color: "#ffcc00", text: "" };
 
   let rating = Math.random() * 2.5 + 2.5;
   let reviewText = simonDb[Math.floor(Math.random() * simonDb.length)];
