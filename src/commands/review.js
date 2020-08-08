@@ -196,7 +196,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     let res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
     const totalCount = res.data.response.total_count;
 
-    //console.log(`total count: ${totalCount}`);
+    console.log(`total count: ${totalCount}`);
 
     const limit = fetchRank == undefined ? 50 : 10;
     args.parameters.limit = limit;
@@ -210,7 +210,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     if (fetchRank != undefined) {
       initialOffset = Math.max(0, totalCount - (fetchRank - 1) - limit / 2); // ranks are 1-based
       stopAtOffset = Math.min(initialOffset + limit, totalCount);
-      //console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
+      console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
     }
 
     // early-out if there are no new beers! (as per timestamp)
@@ -276,17 +276,17 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
         );
 
         // DEBUG logging
-        //if (fetchRank != undefined) {
-        //  console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
-        //}
+        if (fetchRank != undefined) {
+          console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
+        }
 
-        //console.log(`upserted beer id ${item.beer.bid} - recent checkin timestamp = ${recentCheckinTimestamp}, count = ${item.count}`);
+        console.log(`upserted beer id ${item.beer.bid} - recent checkin timestamp = ${recentCheckinTimestamp}, count = ${item.count}`);
         upsertedCount++;
 
         if (item.beer.bid == beerId) {
-          //console.log(
-          //  `[${userInfo.name}] found '${item.brewery.brewery_name} - ${item.beer.beer_name}' at rank ${currentRank} (expected ${fetchRank})`
-          //);
+          console.log(
+            `[${userInfo.name}] found '${item.brewery.brewery_name} - ${item.beer.beer_name}' at rank ${currentRank} (expected ${fetchRank})`
+          );
           console.log(
             `'${item.brewery.brewery_name} - ${item.beer.beer_name}' : had ${item.count} times, first ${item.first_had}, latest : ${
               item.recent_created_at
