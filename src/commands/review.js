@@ -411,11 +411,10 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
     if (reviews[i] == null) {
       if (users[i].name == "Bresson") {
-        if (!firstReview) {
+        if (i == 0) {
           slackMessage.attachments.push(attachment);
         }
         slackMessage.attachments.push(simon.getFakeReviewAttachment(beerInfo));
-        firstReview = false;
       }
       skipAttachment = true;
       continue;
