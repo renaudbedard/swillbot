@@ -3445,7 +3445,7 @@ function getFakeReviewAttachment(beerInfo) {
   attachment.text += `${ratingString}`;
   attachment.text += `\n${reviewText}`;
 
-  attachment.text += `\n\t- Simonbot`;
+  attachment.text += `\n\t- _Simonbot_`;
 
   return attachment;
 }

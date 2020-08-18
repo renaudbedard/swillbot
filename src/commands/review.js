@@ -411,7 +411,9 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
     if (reviews[i] == null) {
       if (users[i].name == "Bresson") {
-        attachment.text = simon.getFakeReviewAttachment(beerInfo).text;
+        let fakeReview = simon.getFakeReviewAttachment(beerInfo);
+        attachment.text = fakeReview.text;
+        attachment.thumb_url = fakeReview.thumb_url;
       } else {
         skipAttachment = true;
       }
