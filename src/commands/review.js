@@ -195,11 +195,11 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     // get the total count with a simple limit=1 request
     args.parameters.limit = 1;
     let res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
-    console.log(`response : ${JSON.stringify(res.data.response)}`);
+    //console.log(`response : ${JSON.stringify(res.data.response)}`);
 
     const totalCount = res.data.response.total_count;
 
-    console.log(`total count: ${totalCount}`);
+    //console.log(`total count: ${totalCount}`);
 
     const limit = fetchRank == undefined ? 50 : 10;
     args.parameters.limit = limit;
