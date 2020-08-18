@@ -3426,6 +3426,30 @@ function formatReviewSlackMessage(source, query, beerInfo) {
   return slackMessage;
 }
 
+function getFakeReviewAttachment(beerInfo) {
+  let attachment = {
+    color: "#ffcc00",
+    text: ""
+  };
+
+  if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+  else attachment.title = `${beerInfo.beer_name}`;
+
+  var prng = seedrandom(attachment.title);
+
+  let reviewText = simonDb[Math.floor(prng() * simonDb.length)];
+
+  let rating = Math.round((prng() * 2.5 + 2.5) * 10) / 10;
+  const ratingString = util.getRatingString(rating);
+
+  attachment.text += `${ratingString}`;
+  attachment.text += `\n${reviewText}`;
+
+  attachment.text += `\n\t- Simonbot`;
+
+  return attachment;
+}
+
 const handler = async function(payload, res) {
   let query = payload.text;
 
@@ -3443,4 +3467,4 @@ const handler = async function(payload, res) {
   }
 };
 
-module.exports = { handler: handler, name: "simon" };
+module.exports = { handler: handler, name: "simon", getFakeReviewAttachment: getFakeReviewAttachment };
