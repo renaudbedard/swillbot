@@ -3429,6 +3429,7 @@ function formatReviewSlackMessage(source, query, beerInfo) {
 function getFakeReviewAttachment(beerInfo) {
   let attachment = {
     color: "#ffcc00",
+    thumb_url: "https://ca.slack-edge.com/TBLMUG0RE-UBMBJBG2X-fb0c6bb231a0-512",
     text: ""
   };
 
