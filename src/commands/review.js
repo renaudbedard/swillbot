@@ -411,12 +411,10 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
     if (reviews[i] == null) {
       if (users[i].name == "Bresson") {
-        if (i == 0) {
-          slackMessage.attachments.push(attachment);
-        }
-        slackMessage.attachments.push(simon.getFakeReviewAttachment(beerInfo));
+        attachment.text = simon.getFakeReviewAttachment(beerInfo).text;
+      } else {
+        skipAttachment = true;
       }
-      skipAttachment = true;
       continue;
     }
 
