@@ -496,7 +496,7 @@ const handler = async function(payload, res) {
       util.onErrorRethrow
     );
 
-    if (reviews.every(x => x == null || x.length == 0)) {
+    if (reviews.every((x, i) => x == null || x.length == 0 || untappdUsers[i].name == "Bresson")) {
       const error = {
         source: `Looking for beer ID in checkins`,
         message: `Requested users have not tried \`${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}\` yet!`
