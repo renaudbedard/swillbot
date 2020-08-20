@@ -10,6 +10,7 @@ const _ = require("lodash");
 const pgPool = require("../pg-pool");
 const simon = require("./simon");
 const seb = require("./seb");
+const mat = require("./mat");
 
 /**
  * @return {Promise<any[]>} All registered Untappd users' info
@@ -419,6 +420,10 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
         let fakeReview = seb.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+      } else if (users[i].name == "matatatatow") {
+        let fakeReview = mat.getFakeReviewAttachment(beerInfo);
+        attachment.text = fakeReview.text;
+        attachment.thumb_url = fakeReview.thumb_url;
       } else {
         skipAttachment = true;
       }
@@ -504,7 +509,7 @@ const handler = async function(payload, res) {
       util.onErrorRethrow
     );
 
-    if (reviews.every((x, i) => (x == null || x.length == 0) && untappdUsers[i].name != "Bresson" && untappdUsers[i].name != "twistedtxb")) {
+    if (reviews.every((x, i) => (x == null || x.length == 0) && !["Bresson", "twistedtxb", "matatatow"].includes(untappdUsers[i].name))) {
       const error = {
         source: `Looking for beer ID in checkins`,
         message: `Requested users have not tried \`${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}\` yet!`
