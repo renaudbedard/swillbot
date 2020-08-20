@@ -9,6 +9,7 @@ const restClient = require("../rest-client");
 const _ = require("lodash");
 const pgPool = require("../pg-pool");
 const simon = require("./simon");
+const seb = require("./seb");
 
 /**
  * @return {Promise<any[]>} All registered Untappd users' info
@@ -412,6 +413,10 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     if (reviews[i] == null) {
       if (users[i].name == "Bresson") {
         let fakeReview = simon.getFakeReviewAttachment(beerInfo);
+        attachment.text = fakeReview.text;
+        attachment.thumb_url = fakeReview.thumb_url;
+      } else if (users[i].name == "twistedtxb") {
+        let fakeReview = seb.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else {
