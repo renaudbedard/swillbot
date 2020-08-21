@@ -2138,6 +2138,8 @@ function getFakeReviewAttachment(beerInfo) {
 
   let reviewText = database[Math.floor(prng() * database.length)];
 
+  prng = seedrandom(attachment.title + "SEB");
+
   let rating = Math.round((prng() * 4.9 + 0.1) * 10) / 10;
   const ratingString = util.getRatingString(rating);
 

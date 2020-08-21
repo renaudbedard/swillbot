@@ -2009,6 +2009,8 @@ function getFakeReviewAttachment(beerInfo) {
 
   let reviewText = database[Math.floor(prng() * database.length)];
 
+  prng = seedrandom(attachment.title + "REN");
+
   let rating = Math.round((prng() * 3 + 2) * 10) / 10;
   const ratingString = util.getRatingString(rating);
 
