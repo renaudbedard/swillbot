@@ -12,6 +12,7 @@ const simon = require("./simon");
 const seb = require("./seb");
 const mat = require("./mat");
 const vin = require("./vin");
+const ren = require("./ren");
 
 /**
  * @return {Promise<any[]>} All registered Untappd users' info
@@ -429,6 +430,10 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
         let fakeReview = vin.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+      } else if (users[i].name == "renaudbedard") {
+        let fakeReview = ren.getFakeReviewAttachment(beerInfo);
+        attachment.text = fakeReview.text;
+        attachment.thumb_url = fakeReview.thumb_url;
       } else {
         skipAttachment = true;
       }
@@ -514,7 +519,7 @@ const handler = async function(payload, res) {
       util.onErrorRethrow
     );
 
-    const botUsers = ["Bresson", "twistedtxb", "matatatow", "vberthiaume"];
+    const botUsers = ["Bresson", "twistedtxb", "matatatow", "vberthiaume", "renaudbedard"];
 
     if (reviews.every((x, i) => (x == null || x.length == 0) && !botUsers.includes(untappdUsers[i].name))) {
       const error = {
