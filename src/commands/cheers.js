@@ -14,12 +14,15 @@ function scrapeCheers() {
   return new Promise((resolve, reject) => {
     let args = { };
 
-    let req = restClient.get("https://boutiquecheers.com/products/new", args, function(data, _) {
+    let req = restClient.get("https://boutiquecheers.com/products/new", args, async function(data, _) {
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
       }
 
-      const dom = new JSDOM(data, { runScripts: "dangerously" });
+      const dom = new JSDOM(data, { runScripts: "dangerously", resources: "usable" });
+
+      await new Promise(r => setTimeout(r, 4000))
+
       console.log(dom.serialize());
 
       var gridDiv = dom.window.document.querySelector("#root > div > div > div > div > div > div > div");
