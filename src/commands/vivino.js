@@ -26,40 +26,40 @@ function scrapeWineInfo(query) {
 
       const dom = new JSDOM(data);
 
-      var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+      try {
+        var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+        var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
+        var imageLink = cardDiv
+          .querySelector("figure.wine-card__image")
+          .getAttribute("style")
+          .match(/url\(\/\/(.+)\)/)[1];
+        imageLink = `http://${imageLink}`;
+        var wineName = cardDiv.querySelector(".wine-card__name span").textContent.trim();
+        var region = cardDiv.querySelector(".wine-card__region a").textContent;
+        var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
+        var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
+        var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
+        var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
 
-      if (!cardDiv) {
+        resolve({
+          query: query,
+          name: wineName,
+          link: winePageLink,
+          rating_score: averageRating,
+          rating_count: ratingCount,
+          label_url: imageLink,
+          region: region,
+          country: country,
+          emojiPrefix: null
+        });
+
+      } catch (err) {
         reject({
           source: context,
-          message: "Couldn't find matching wine!"
+          message: `Couldn't find matching wine! (err : ${err})`
         });
         return;
       }
-
-      var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
-      var imageLink = cardDiv
-        .querySelector("figure.wine-card__image")
-        .getAttribute("style")
-        .match(/url\(\/\/(.+)\)/)[1];
-      imageLink = `http://${imageLink}`;
-      var wineName = cardDiv.querySelector(".wine-card__name span").textContent.trim();
-      var region = cardDiv.querySelector(".wine-card__region a").textContent;
-      var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
-      var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
-      var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
-      var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
-
-      resolve({
-        query: query,
-        name: wineName,
-        link: winePageLink,
-        rating_score: averageRating,
-        rating_count: ratingCount,
-        label_url: imageLink,
-        region: region,
-        country: country,
-        emojiPrefix: null
-      });
     });
 
     req.on("error", function(err) {
