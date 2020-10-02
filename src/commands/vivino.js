@@ -200,9 +200,18 @@ const handler = async function(payload, res) {
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
     const wineQueries = util.getQueries(text);
+    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim()));
 
-    let wineInfos = await Promise.all(wineQueries.map(x => scrapeWineInfo(x.trim())));
-    wineInfos = await Promise.all(wineInfos.map(x => scrapeWineDetails(x)));
+    let wineInfos = await Promise.all(
+      wineInfoPromises.map(p =>
+        p.catch(err => {
+          // ignore errors
+          return { inError: true, query: err.exactQuery };
+        })
+      )
+    );
+
+    wineInfos = await Promise.all(wineInfos.map(x => x.inError ? x : scrapeWineDetails(x))).catch(util.onErrorRethrow);
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineInfos);
 
