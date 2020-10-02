@@ -56,14 +56,15 @@ function scrapeWineInfo(query) {
       } catch (err) {
         reject({
           source: context,
-          message: `Couldn't find matching wine! (err : ${err})`
+          message: `Couldn't find matching wine! (err : ${err})`,
+          exactQuery: query
         });
         return;
       }
     });
 
     req.on("error", function(err) {
-      reject({ source: context, message: err.toString() });
+      reject({ source: context, message: err.toString(), exactQuery: query });
     });
   });
 }
@@ -202,7 +203,7 @@ const handler = async function(payload, res) {
     const wineQueries = util.getQueries(text);
     const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim()));
 
-    let wineInfos = await Promise.all(
+    const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
         p.catch(err => {
           // ignore errors
@@ -211,9 +212,9 @@ const handler = async function(payload, res) {
       )
     );
 
-    wineInfos = await Promise.all(wineInfos.map(x => x.inError ? x : scrapeWineDetails(x))).catch(util.onErrorRethrow);
+    const wineDetails = await Promise.all(wineInfos.map(x => x.inError ? x : scrapeWineDetails(x))).catch(util.onErrorRethrow);
 
-    const message = formatWineInfoSlackMessage(payload.user_id, text, wineInfos);
+    const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
 
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
