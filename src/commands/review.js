@@ -174,7 +174,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
       [ri.checkin_comment, ri.checkin_photo] = await getCheckinComment(ri.recent_checkin_id);
     }
     // order by score, descending
-    gatheredReviewInfos.sort((a, b) => b.rating_score - a.rating_score);
+    gatheredReviewInfos.sort((a, b) => b.rating - a.rating);
     return gatheredReviewInfos;
   } else {
     [reviewInfo.checkin_comment, reviewInfo.checkin_photo] = await getCheckinComment(reviewInfo.recent_checkin_id);
