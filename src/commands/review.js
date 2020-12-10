@@ -162,7 +162,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
         tryPushResult(fuzzyResult.rows[0]);
       }
     }
-    if (reviewInfo == null) {
+    if (gatheredReviewInfos.length == 0) {
       console.log(`[${userInfo.name}] not found! we tried...`);
       return null;
     }
