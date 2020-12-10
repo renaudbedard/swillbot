@@ -508,17 +508,23 @@ const handler = async function(payload, res) {
     if (slackUser == null) untappdUsers = await getUntappdUsers();
     else untappdUsers = [await getUntappdUser(slackUser)];
 
-    const beerId = await util.searchForBeerId(query);
-    const beerInfo = await util.getBeerInfo(beerId.id, query);
-
-    let parentId = null;
-    const parent = beerInfo.variant_parent || beerInfo.vintage_parent;
-    if (parent && parent.beer) parentId = parent.beer.bid;
-
+    let beerId = { id: -1 };
+    let beerInfo = null;
     let vintageIds = [];
-    if (beerInfo.vintages) vintageIds = beerInfo.vintages.items.map(x => x.beer.bid);
+    let parentId = null;
+    let beerName = query;
 
-    const beerName = `${beerInfo.brewery.brewery_name} - ${beerInfo.beer_name}`;
+    if (!fuzzyGather) {
+      beerId = await util.searchForBeerId(query);
+      beerInfo = await util.getBeerInfo(beerId.id, query);
+
+      const parent = beerInfo.variant_parent || beerInfo.vintage_parent;
+      if (parent && parent.beer) parentId = parent.beer.bid;
+
+      if (beerInfo.vintages) vintageIds = beerInfo.vintages.items.map(x => x.beer.bid);
+
+      beerName = `${beerInfo.brewery.brewery_name} - ${beerInfo.beer_name}`;
+    }
 
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId.id, beerName, parentId, vintageIds, fuzzyGather))).catch(
       util.onErrorRethrow
@@ -529,7 +535,7 @@ const handler = async function(payload, res) {
     if (reviews.every((x, i) => (x == null || x.length == 0) && !botUsers.includes(untappdUsers[i].name))) {
       const error = {
         source: `Looking for beer ID in checkins`,
-        message: `Requested users have not tried \`${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}\` yet!`
+        message: `Requested users have not tried \`${beerName}\` yet!`
       };
       throw error;
     }
