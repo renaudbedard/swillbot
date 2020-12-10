@@ -152,7 +152,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
 
     if (fuzzyResult.rows.length > 0) {
       if (fuzzyGather) {
-        for (let i = 0; i < min(fuzzyResult.rows.length, 50); i++) {
+        for (let i = 0; i < Math.min(fuzzyResult.rows.length, 50); i++) {
           console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[i].beer_name}'`);
           tryPushResult(fuzzyResult.rows[i]);
         }
