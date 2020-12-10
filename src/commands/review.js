@@ -384,7 +384,7 @@ function getCheckinComment(checkinId) {
  * @param {object} beerInfo Untappd beer info
  * @return {object} The rich slack message
  */
-function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
+function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzyGather) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -397,16 +397,21 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
 
   let attachment = {
     color: "#ffcc00",
-    title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
-    thumb_url: beerInfo.beer_label,
     pretext: `<@${source}>: \`/review ${strippedQuery}\``,
     text: ""
   };
 
-  if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
-  else attachment.title = `${beerInfo.beer_name}`;
-
   let skipAttachment = false;
+
+  if (beerInfo == null) {
+    skipAttachment = true;
+  } else {
+    attachment.title_link = `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`;
+    attachment.thumb_url = beerInfo.beer_label;
+    if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
+    else attachment.title = `${beerInfo.beer_name}`;
+  }
+
   for (let i = 0; i < users.length; i++) {
     if (i > 0 && !skipAttachment) {
       slackMessage.attachments.push(attachment);
@@ -451,14 +456,23 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo) {
     let firstReview = true;
     for (let reviewInfo of reviewInfos) {
       if (!firstReview) {
-        slackMessage.attachments.push(attachment);
+        if (!skipAttachment) {
+          slackMessage.attachments.push(attachment);
+        }
+        skipAttachment = false;
         attachment = { color: "#ffcc00", text: "" };
       }
       const ratingString = util.getRatingString(reviewInfo.rating);
 
       // is this a fuzzy match?
       if (reviewInfo.beer_id != beerInfo.bid) {
-        attachment.text += `_Vintage or variant : *${reviewInfo.beer_name}*_\n`;
+        if (fuzzyGather) {
+          attachment.title_link = `https://untappd.com/b/${reviewInfo.beer_slug}/${reviewInfo.bid}`;
+          attachment.thumb_url = reviewInfo.beer_label;
+          if (reviewInfo.brewery) attachment.title = `${reviewInfo.brewery.brewery_name} – ${reviewInfo.beer_name}`;
+          else attachment.title = `${reviewInfo.beer_name}`;
+        }
+        else attachment.text += `_Vintage or variant : *${reviewInfo.beer_name}*_\n`;
       }
 
       attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
@@ -543,7 +557,7 @@ const handler = async function(payload, res) {
     //console.log(untappdUsers);
     //console.log(reviews);
 
-    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, untappdUsers, reviews, beerInfo);
+    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, untappdUsers, reviews, beerInfo, fuzzyGather);
 
     util.sendDelayedResponse(slackMessage, payload.response_url);
   } catch (err) {
