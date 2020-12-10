@@ -465,7 +465,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzy
       const ratingString = util.getRatingString(reviewInfo.rating);
 
       // is this a fuzzy match?
-      if (reviewInfo.beer_id != beerInfo.bid) {
+      if (beerInfo == null || reviewInfo.beer_id != beerInfo.bid) {
         if (fuzzyGather) {
           attachment.title_link = `https://untappd.com/b/${reviewInfo.beer_slug}/${reviewInfo.bid}`;
           attachment.thumb_url = reviewInfo.beer_label;
