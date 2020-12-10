@@ -152,7 +152,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
 
     if (fuzzyResult.rows.length > 0) {
       if (fuzzyGather) {
-        for (let i = 0; i < fuzzyResult.rows.length; i++) {
+        for (let i = 0; i < min(fuzzyResult.rows.length, 50); i++) {
           console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[i].beer_name}'`);
           tryPushResult(fuzzyResult.rows[i]);
         }
@@ -173,6 +173,8 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
     for (let ri of gatheredReviewInfos) {
       [ri.checkin_comment, ri.checkin_photo] = await getCheckinComment(ri.recent_checkin_id);
     }
+    // order by score, descending
+    gatheredReviewInfos.sort((a, b) => b.rating_score - a.rating_score);
     return gatheredReviewInfos;
   } else {
     [reviewInfo.checkin_comment, reviewInfo.checkin_photo] = await getCheckinComment(reviewInfo.recent_checkin_id);
