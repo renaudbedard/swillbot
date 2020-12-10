@@ -143,7 +143,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
     console.log(`[${userInfo.name}] trying to string match beer '${beerName}'...`);
     const fuzzyResult = await util.tryPgQuery(
       null,
-      `select beer_id, beer_name, rank
+      `select username, beer_id, beer_name, recent_checkin_id, recent_checkin_timestamp, count, rating, rank
       from user_reviews 
       where username = $1 and beer_name ilike $2`,
       [userInfo.name, `%${beerName}%`],
@@ -154,12 +154,12 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
       if (fuzzyGather) {
         for (let i = 0; i < fuzzyResult.rows.length; i++) {
           console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[i].beer_name}'`);
-          reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[i].beer_id, fuzzyResult.rows[i].rank);
-          tryPushResult(reviewInfo);
+          tryPushResult(fuzzyResult.rows[i]);
         }
       } else {
         console.log(`[${userInfo.name}] matched '${beerName}' as '${fuzzyResult.rows[0].beer_name}'`);
-        reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
+        //reviewInfo = await findAndCacheUserBeers(userInfo, fuzzyResult.rows[0].beer_id, fuzzyResult.rows[0].rank);
+        tryPushResult(fuzzyResult.rows[0]);
       }
     }
     if (reviewInfo == null) {
@@ -471,8 +471,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzy
           attachment.thumb_url = reviewInfo.beer_label;
           if (reviewInfo.brewery) attachment.title = `${reviewInfo.brewery.brewery_name} – ${reviewInfo.beer_name}`;
           else attachment.title = `${reviewInfo.beer_name}`;
-        }
-        else attachment.text += `_Vintage or variant : *${reviewInfo.beer_name}*_\n`;
+        } else attachment.text += `_Vintage or variant : *${reviewInfo.beer_name}*_\n`;
       }
 
       attachment.text += `${ratingString} (${reviewInfo.count} check-in${reviewInfo.count > 1 ? "s" : ""})`;
