@@ -224,7 +224,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     }
 
     // early-out if there are no beers at all
-    if (res.data.response.beers.items.count == 0) {
+    if (res.data.response.beers.items.count == 0 || !res.data.response.beers.items[0]) {
       console.log(`[${userInfo.name}] no beer found, earlying out!`);
       return null;
     }
