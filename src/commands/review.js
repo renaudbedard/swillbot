@@ -223,6 +223,12 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
       console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
     }
 
+    // early-out if there are no beers at all
+    if (res.data.response.beers.items.count == 0) {
+      console.log(`[${userInfo.name}] no beer found, earlying out!`);
+      return null;
+    }
+
     // early-out if there are no new beers! (as per timestamp)
     let recentCheckinTimestamp = new Date(res.data.response.beers.items[0].recent_created_at);
     if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
