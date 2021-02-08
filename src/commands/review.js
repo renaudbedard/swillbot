@@ -110,7 +110,7 @@ async function findReview(userInfo, beerId, beerName, parentId, vintageIds, fuzz
 
   if (result.rows.length == 1) {
     // force-recache the batch around that review's rank
-    console.log(`[${userInfo.name}] found the beer check-in; will force-recache`);
+    console.log(`[${userInfo.name}] found the beer check-in at ${result.rows[0].rank}; will force-recache`);
     reviewInfo = await findAndCacheUserBeers(userInfo, beerId, result.rows[0].rank);
     tryPushResult(reviewInfo);
   } else {
