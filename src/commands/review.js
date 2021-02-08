@@ -202,7 +202,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     // get the total count with a simple limit=1 request
     args.parameters.limit = 1;
     let res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
-    //console.log(`response : ${JSON.stringify(res.data.response)}`);
+    console.log(`[${userInfo.name}] response : ${JSON.stringify(res.data.response)}`);
 
     const totalCount = res.data.response.total_count;
 
@@ -220,7 +220,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     if (fetchRank != undefined) {
       initialOffset = Math.max(0, totalCount - (fetchRank - 1) - limit / 2); // ranks are 1-based
       stopAtOffset = Math.min(initialOffset + limit, totalCount);
-      console.log(`initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
+      console.log(`[${userInfo.name}] totalCount: ${totalCount} | initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
     }
 
     // early-out if there are no beers at all
