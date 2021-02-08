@@ -508,15 +508,6 @@ const handler = async function(payload, res) {
   let query = payload.text;
   let fuzzyGather = false;
 
-  // fix alec's reviews
-  await util.tryPgQuery(
-    pgClient,
-    `update user_reviews 
-      set Username = $1
-      where Username = $2`,
-    ["AleAleAleB", "aboyte"]
-  );
-
   // look for special tags
   if (payload.text.indexOf("<!channel>") > -1 || payload.text.indexOf("<!everyone>") > -1 || payload.text.indexOf("<!here>") > -1) {
     //console.log("found multi-user tag");
