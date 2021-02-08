@@ -432,7 +432,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzy
         let fakeReview = simon.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
-      } else if (users[i].name == "twistedtxb") {
+      } else if (users[i].name == "Sebastouflant") {
         let fakeReview = seb.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
@@ -440,7 +440,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzy
         let fakeReview = mat.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
-      } else if (users[i].name == "vberthiaume") {
+      } else if (users[i].name == "vin100limite") {
         let fakeReview = vin.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
@@ -551,7 +551,7 @@ const handler = async function(payload, res) {
       util.onErrorRethrow
     );
 
-    const botUsers = ["Bresson", "twistedtxb", "matatatow", "vberthiaume", "renaudbedard", "AleAleAleB"];
+    const botUsers = ["Bresson", "Sebastouflant", "matatatow", "vin100limite", "renaudbedard", "AleAleAleB"];
 
     if (reviews.every((x, i) => (x == null || x.length == 0) && !botUsers.includes(untappdUsers[i].name))) {
       const error = {
