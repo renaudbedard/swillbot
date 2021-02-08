@@ -202,7 +202,7 @@ async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
     // get the total count with a simple limit=1 request
     args.parameters.limit = 1;
     let res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
-    console.log(`[${userInfo.name}] response : ${JSON.stringify(res.data.response)}`);
+    //console.log(`[${userInfo.name}] response : ${JSON.stringify(res.data.response)}`);
 
     const totalCount = res.data.response.total_count;
 
@@ -448,7 +448,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzy
         let fakeReview = ren.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
-      } else if (users[i].name == "aboyte") {
+      } else if (users[i].name == "AleAleAleB") {
         let fakeReview = alec.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
@@ -508,6 +508,15 @@ const handler = async function(payload, res) {
   let query = payload.text;
   let fuzzyGather = false;
 
+  // fix alec's reviews
+  await util.tryPgQuery(
+    pgClient,
+    `update user_reviews 
+      set Username = $1
+      where Username = $2`,
+    ["AleAleAleB", "aboyte"]
+  );
+
   // look for special tags
   if (payload.text.indexOf("<!channel>") > -1 || payload.text.indexOf("<!everyone>") > -1 || payload.text.indexOf("<!here>") > -1) {
     //console.log("found multi-user tag");
@@ -551,7 +560,7 @@ const handler = async function(payload, res) {
       util.onErrorRethrow
     );
 
-    const botUsers = ["Bresson", "twistedtxb", "matatatow", "vberthiaume", "renaudbedard", "aboyte"];
+    const botUsers = ["Bresson", "twistedtxb", "matatatow", "vberthiaume", "renaudbedard", "AleAleAleB"];
 
     if (reviews.every((x, i) => (x == null || x.length == 0) && !botUsers.includes(untappdUsers[i].name))) {
       const error = {
