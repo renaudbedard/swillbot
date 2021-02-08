@@ -201,8 +201,9 @@ function searchForBeerId(query) {
       }
       let firstResult =
         data.response.beers.count > 0 ? data.response.beers.items[0] : data.response.homebrew.count > 0 ? data.response.homebrew.items[0] : null;
+      console.log(`found ${data.response.beers.count} results for query : ${query}`);
       if (firstResult) {
-        //console.log(`beer id : ${firstResult.beer.bid}`);
+        console.log(`first result has beer ID of : ${firstResult.beer.bid}`);
         resolve({
           id: firstResult.beer.bid,
           query: query
