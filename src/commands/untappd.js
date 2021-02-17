@@ -49,7 +49,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
       const ratingPerDollar = exponentialRating(beerInfo.rating_score) / (beerInfo.price / 4.0);
       ratingString = `${ratingString} — *${ratingPerDollar.toFixed(2)}* :fullbeer:/:dollar:`;
     }
-    let ibuFragment = beerInfo.beer_ibu ? "" : ` — ${beerInfo.beer_ibu} IBU`;
+    let ibuFragment = beerInfo.beer_ibu ? ` — ${beerInfo.beer_ibu} IBU` : "";
     let attachment = {
       color: "#ffcc00",
       title_link: `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`,
