@@ -14,8 +14,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
   return new Promise((resolve, reject) => {
     let args = {
       parameters: {
-        q: query,
-        product_list_limit: 96
+        q: query
       }
     };
 
@@ -36,23 +35,34 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
         var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
         var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
         var wineName = cardDiv.querySelector(".product-item-link").textContent.trim();
-        var region = cardDiv.querySelector(".product-item-identity-format span").textContent;
-        //var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
-        //var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
-        //var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
-        //var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
+        var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
+        var rating = cardDiv.querySelector(".rating-result > span > span").textContent.match(/\([0-9]{1,3}\)\(%\)/)[0];
+        var ratingCount = cardDiv.querySelector(".reviews-actions > a").textContent.match(/\([0-9]+\)/)[0];
+
+        var identity = cardDiv.querySelector(".product-item-identity-format span").textContent.split("|");
+        var type = identity[0].trim();
+        var formatFragments = identity[1]
+          .trim()
+          .split(" ")
+          .filter(function(el) {
+            return el.length != 0;
+          });
+        var format = `${formatFragments[0].trim()} ${formatFragments[1].trim()}`;
+        var country = identity[2].trim();
 
         resolve({
           query: query,
           name: wineName,
           link: winePageLink,
-          rating_score: 0,
-          rating_count: 0,
+          rating_score: (parseInt(rating) / 100.0) * 5,
+          rating_count: parseInf(ratingCount),
           label_url: imageLink,
           region: region,
-          country: "",
+          country: country,
           emojiPrefix: null,
-          type: ""
+          type: type,
+          format: format,
+          price: price
         });
       } catch (err) {
         reject({
@@ -167,17 +177,16 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
   wineInfos.sort((a, b) => b.rating_score - a.rating_score);
 
   for (let wineInfo of wineInfos) {
-    const ratingSuffix = wineInfo.ratings_all_vintages ? " [all vintages]" : "";
-    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)${ratingSuffix}`;
+    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
     let typeString = "";
     if (wineInfo.type) {
-      typeString = `${wineInfo.type} from `;
+      typeString = `${wineInfo.type} de `;
     }
     let attachment = {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
       thumb_url: wineInfo.label_url,
-      text: `${ratingString}\n_${typeString}${wineInfo.region} — ${wineInfo.country}_`
+      text: `${ratingString}\n_${typeString}${wineInfo.country}_\n${wineInfo.price}} — ${wineInfo.format}`
     };
     if (wineInfos.length > 1) {
       attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
@@ -190,7 +199,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     slackMessage.attachments.push(attachment);
   }
 
-  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/vivino ${query}\``;
+  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
   return slackMessage;
 }
