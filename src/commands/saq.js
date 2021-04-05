@@ -178,7 +178,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
   wineInfos.sort((a, b) => b.rating_score - a.rating_score);
 
   for (let wineInfo of wineInfos) {
-    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
+    let ratingString = ""; // `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
     let typeString = "";
     if (wineInfo.type) {
       typeString = `${wineInfo.type} de `;
@@ -187,7 +187,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
       thumb_url: wineInfo.label_url,
-      text: `${ratingString}\n_${typeString}${wineInfo.country}_\n${wineInfo.price}} — ${wineInfo.format}`
+      text: `${ratingString}\n_${typeString}${wineInfo.country}_\n:dollar: ${wineInfo.price} (${wineInfo.format})`
     };
     if (wineInfos.length > 1) {
       attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
