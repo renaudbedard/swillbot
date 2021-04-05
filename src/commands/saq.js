@@ -72,6 +72,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             format: format,
             price: price
           });
+          return;
         }
 
         reject({
