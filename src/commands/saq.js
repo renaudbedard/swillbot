@@ -59,7 +59,6 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
           rating_score: (parseInt(rating) / 100.0) * 5,
           rating_count: parseInt(ratingCount),
           label_url: imageLink,
-          region: region,
           country: country,
           emojiPrefix: null,
           type: type,
@@ -166,7 +165,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     if (wineInfo.inError) {
       let attachment = {
         color: "#ff0000",
-        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\` (error : ${wineInfo.message})`
+        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\`\n${wineInfo.message}`
       };
       slackMessage.attachments.push(attachment);
     }
