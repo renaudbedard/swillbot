@@ -164,7 +164,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     if (wineInfo.inError) {
       let attachment = {
         color: "#ff0000",
-        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\``
+        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\` (error : ${wineInfo.message})`
       };
       slackMessage.attachments.push(attachment);
     }
@@ -217,7 +217,7 @@ const handler = async function(payload, res) {
       wineInfoPromises.map(p =>
         p.catch(err => {
           // ignore errors
-          return { inError: true, query: err.exactQuery };
+          return { inError: true, query: err.exactQuery, message: err.message };
         })
       )
     );
