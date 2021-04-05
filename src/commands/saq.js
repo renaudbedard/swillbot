@@ -30,6 +30,32 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
       const dom = new JSDOM(data);
 
       try {
+        // single-result case
+        var singleResult = dom.window.document.querySelector(".detailed");
+        if (singleResult) {
+          var mainContent = dom.window.document.querySelector("#maincontent");
+          var wineName = mainContent.querySelector(".page-title").textContent.trim();
+          var wineId = mainContent.querySelector('ul.list-attributs strong[data-th="Code SAQ"]').textContent.trim();
+          var winePageLink = `https://www.saq.com/fr/${wineId}`;
+          var imageLink = mainContent.querySelector(".mz-figure > img").getAttribute("src");
+          var price = mainContent.querySelector(".price").textContent.replace("&nbsp;", "");
+          var type = mainContent.querySelector(".identity .type").textContent.trim();
+          var format = mainContent.querySelector(".format .type").textContent.trim();
+          var country = mainContent.querySelector(".country .type").textContent.trim();
+
+          resolve({
+            query: query,
+            name: wineName,
+            link: winePageLink,
+            label_url: imageLink,
+            country: country,
+            type: type,
+            format: format,
+            price: price
+          });
+          return;
+        }
+
         for (let cardDiv of dom.window.document.querySelectorAll(".product-items > li")) {
           var inStock = cardDiv.querySelector(".in-stock");
           var wineName = cardDiv
@@ -44,10 +70,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
 
           var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
           var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
-          var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
-          var rating = "0";
-          var ratingCount = "0";
-
+          var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", "");
           var identity = cardDiv.querySelector(".product-item-identity-format span").textContent.split("|");
           var type = identity[0].trim();
           var formatFragments = identity[1]
@@ -63,11 +86,8 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             query: query,
             name: wineName,
             link: winePageLink,
-            rating_score: (parseInt(rating) / 100.0) * 5,
-            rating_count: parseInt(ratingCount),
             label_url: imageLink,
             country: country,
-            emojiPrefix: null,
             type: type,
             format: format,
             price: price
