@@ -30,44 +30,50 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
       const dom = new JSDOM(data);
 
       try {
-        var cardDiv = dom.window.document.querySelector(".product-items > li:first-child");
+        for (let cardDiv of dom.window.document.querySelectorAll(".product-items > li")) {
+          var inStock = cardDiv.querySelector(".in-stock");
+          if (!inStock) continue;
 
-        var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
-        var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
-        var wineName = cardDiv
-          .querySelector(".product-item-link")
-          .textContent.trim()
-          .replace(/\s{2,}/, " ");
-        console.log(`Found wine : ${wineName}`);
-        var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
-        //var rating = cardDiv.querySelector(".rating-result > span > span").textContent.match(/\([0-9]{1,3}\)\(%\)/)[0];
-        //var ratingCount = cardDiv.querySelector(".reviews-actions > a").textContent.match(/\([0-9]+\)/)[0];
-        var rating = "0";
-        var ratingCount = "0";
+          var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
+          var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
+          var wineName = cardDiv
+            .querySelector(".product-item-link")
+            .textContent.trim()
+            .replace(/\s{2,}/, " ");
+          var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
+          var rating = "0";
+          var ratingCount = "0";
 
-        var identity = cardDiv.querySelector(".product-item-identity-format span").textContent.split("|");
-        var type = identity[0].trim();
-        var formatFragments = identity[1]
-          .trim()
-          .split(" ")
-          .filter(function(el) {
-            return el.length != 0;
+          var identity = cardDiv.querySelector(".product-item-identity-format span").textContent.split("|");
+          var type = identity[0].trim();
+          var formatFragments = identity[1]
+            .trim()
+            .split(" ")
+            .filter(function(el) {
+              return el.length != 0;
+            });
+          var format = `${formatFragments[0].trim()} ${formatFragments[1].trim()}`;
+          var country = identity[2].trim();
+
+          resolve({
+            query: query,
+            name: wineName,
+            link: winePageLink,
+            rating_score: (parseInt(rating) / 100.0) * 5,
+            rating_count: parseInt(ratingCount),
+            label_url: imageLink,
+            country: country,
+            emojiPrefix: null,
+            type: type,
+            format: format,
+            price: price
           });
-        var format = `${formatFragments[0].trim()} ${formatFragments[1].trim()}`;
-        var country = identity[2].trim();
+        }
 
-        resolve({
-          query: query,
-          name: wineName,
-          link: winePageLink,
-          rating_score: (parseInt(rating) / 100.0) * 5,
-          rating_count: parseInt(ratingCount),
-          label_url: imageLink,
-          country: country,
-          emojiPrefix: null,
-          type: type,
-          format: format,
-          price: price
+        reject({
+          source: context,
+          message: "Aucun résultat!",
+          exactQuery: query
         });
       } catch (err) {
         reject({
