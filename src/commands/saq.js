@@ -72,7 +72,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
 
         reject({
           source: context,
-          message: "Aucun résultat!",
+          message: "Aucun résultat en stock!",
           exactQuery: query
         });
       } catch (err) {
@@ -175,7 +175,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     if (wineInfo.inError) {
       let attachment = {
         color: "#ff0000",
-        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\`\n${wineInfo.message}`
+        text: `*Erreur de la requête :* \`${wineInfo.query}\`\n${wineInfo.message}`
       };
       slackMessage.attachments.push(attachment);
     }
