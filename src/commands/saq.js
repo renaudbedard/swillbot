@@ -34,7 +34,10 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
 
         var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
         var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
-        var wineName = cardDiv.querySelector(".product-item-link").textContent.trim();
+        var wineName = cardDiv
+          .querySelector(".product-item-link")
+          .textContent.trim()
+          .replace(/\\w+/, " ");
         var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
         //var rating = cardDiv.querySelector(".rating-result > span > span").textContent.match(/\([0-9]{1,3}\)\(%\)/)[0];
         //var ratingCount = cardDiv.querySelector(".reviews-actions > a").textContent.match(/\([0-9]+\)/)[0];
