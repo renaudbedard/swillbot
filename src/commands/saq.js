@@ -37,8 +37,8 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
         var wineName = cardDiv
           .querySelector(".product-item-link")
           .textContent.trim()
-          .replace(/\\s{2,}/, " ");
-        console.log(`Found wine : ${cardDiv.querySelector(".product-item-link").textContent.trim()}`);
+          .replace(/\s{2,}/, " ");
+        console.log(`Found wine : ${wineName}`);
         var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
         //var rating = cardDiv.querySelector(".rating-result > span > span").textContent.match(/\([0-9]{1,3}\)\(%\)/)[0];
         //var ratingCount = cardDiv.querySelector(".reviews-actions > a").textContent.match(/\([0-9]+\)/)[0];
