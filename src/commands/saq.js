@@ -32,14 +32,18 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
       try {
         for (let cardDiv of dom.window.document.querySelectorAll(".product-items > li")) {
           var inStock = cardDiv.querySelector(".in-stock");
-          if (!inStock) continue;
-
-          var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
-          var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
           var wineName = cardDiv
             .querySelector(".product-item-link")
             .textContent.trim()
             .replace(/\s{2,}/, " ");
+
+          if (!inStock) {
+            console.log(`${wineName} n'a plus de stock, skipping...`);
+            continue;
+          }
+
+          var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
+          var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
           var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
           var rating = "0";
           var ratingCount = "0";
