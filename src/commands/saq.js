@@ -40,7 +40,10 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
           var imageLink = mainContent.querySelector('#mtImageContainer img[itemprop="image"]').getAttribute("src");
           var price = mainContent.querySelector(".price").textContent.replace("&nbsp;", "");
           var type = mainContent.querySelector(".identity .type").textContent.trim();
-          var format = mainContent.querySelector(".format .type").textContent.trim();
+          var format = mainContent
+            .querySelector(".format .type")
+            .textContent.trim()
+            .replace(/\s{2,}/, " ");
           var country = mainContent.querySelector(".country .type").textContent.trim();
 
           resolve({
@@ -216,7 +219,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     let ratingString = ""; // `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
     let typeString = "";
     if (wineInfo.type) {
-      typeString = `${wineInfo.type} de `;
+      typeString = `${wineInfo.type} — `;
     }
     let attachment = {
       color: "#ffcc00",
