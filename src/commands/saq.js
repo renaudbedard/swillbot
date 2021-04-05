@@ -36,8 +36,10 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
         var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
         var wineName = cardDiv.querySelector(".product-item-link").textContent.trim();
         var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", " ");
-        var rating = cardDiv.querySelector(".rating-result > span > span").textContent.match(/\([0-9]{1,3}\)\(%\)/)[0];
-        var ratingCount = cardDiv.querySelector(".reviews-actions > a").textContent.match(/\([0-9]+\)/)[0];
+        //var rating = cardDiv.querySelector(".rating-result > span > span").textContent.match(/\([0-9]{1,3}\)\(%\)/)[0];
+        //var ratingCount = cardDiv.querySelector(".reviews-actions > a").textContent.match(/\([0-9]+\)/)[0];
+        var rating = 0;
+        var ratingCount = 0;
 
         var identity = cardDiv.querySelector(".product-item-identity-format span").textContent.split("|");
         var type = identity[0].trim();
@@ -67,7 +69,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
       } catch (err) {
         reject({
           source: context,
-          message: `Couldn't find matching wine! (err : ${err})`,
+          message: err.stack,
           exactQuery: query
         });
         return;
