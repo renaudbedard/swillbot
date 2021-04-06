@@ -170,6 +170,45 @@ function scrapeWineDetails(wineInfo) {
   });
 }
 
+function scrapeWineScore(wineInfo) {
+  const context = `Search for wine '${wineInfo.name}'`;
+  return new Promise((resolve, reject) => {
+    let args = {
+      parameters: {
+        q: wineInfo.name
+      }
+    };
+
+    let req = restClient.get("https://www.vivino.com/search/wines", args, function(data, _) {
+      if (Buffer.isBuffer(data)) {
+        data = data.toString("utf8");
+      }
+      //console.log(data);
+
+      const dom = new JSDOM(data);
+
+      try {
+        var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+        var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
+        var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
+        var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
+
+        wineInfo.rating_score = averageRating;
+        wineInfo.rating_count = ratingCount;
+
+        resolve(wineInfo);
+      } catch (err) {
+        resolve(wineInfo);
+        return;
+      }
+    });
+
+    req.on("error", function(err) {
+      reject({ source: context, message: err.toString(), exactQuery: query });
+    });
+  });
+}
+
 /**
  * @param {string} source The user ID that made the request
  * @param {string} query The original request
@@ -201,7 +240,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
   wineInfos.sort((a, b) => b.rating_score - a.rating_score);
 
   for (let wineInfo of wineInfos) {
-    let ratingString = ""; // `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
+    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
     let typeString = "";
     if (wineInfo.type) {
       typeString = `${wineInfo.type} — ${wineInfo.country}`;
@@ -268,8 +307,9 @@ const handler = async function(payload, res) {
     );
 
     const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
+    const wineWithScore = await Promise.all(wineDetails.map(x => (x.inError ? x : scrapeWineScore(x)))).catch(util.onErrorRethrow);
 
-    const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
+    const message = formatWineInfoSlackMessage(payload.user_id, text, wineWithScore);
 
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
