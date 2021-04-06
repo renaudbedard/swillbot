@@ -207,47 +207,50 @@ function scrapeWineScore(wineInfo) {
         wineInfo.rating_count = ratingCount;
         wineInfo.vivino_link = winePageLink;
 
-        resolve(wineInfo);
+        if (!wineInfo.rating_score) {
+          args = {
+            parameters: {}
+          };
+
+          req = restClient.get(wineInfo.vivino_link, args, function(data, _) {
+            if (Buffer.isBuffer(data)) {
+              data = data.toString("utf8");
+            }
+
+            // this is very unsafe but oh well
+            const dom = new JSDOM(data, { runScripts: "dangerously" });
+            //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
+
+            var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
+
+            if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
+              const wineMetadata = pageInfo.vintage.wine;
+
+              if (wineMetadata.statistics) {
+                wineInfo.rating_score = wineMetadata.statistics.ratings_average;
+                wineInfo.rating_count = wineMetadata.statistics.ratings_count;
+                wineInfo.ratings_all_vintages = true;
+              }
+            }
+
+            resolve(wineInfo);
+          });
+          req.on("error", function(err) {
+            reject({ source: context, message: err.toString(), exactQuery: query });
+          });
+        } else {
+          resolve(wineInfo);
+          return;
+        }
       } catch (err) {
         resolve(wineInfo);
         return;
       }
     });
+
     req.on("error", function(err) {
       reject({ source: context, message: err.toString(), exactQuery: query });
     });
-
-    if (!wineInfo.rating_score) {
-      args = {
-        parameters: {}
-      };
-
-      req = restClient.get(wineInfo.vivino_link, args, function(data, _) {
-        if (Buffer.isBuffer(data)) {
-          data = data.toString("utf8");
-        }
-
-        // this is very unsafe but oh well
-        const dom = new JSDOM(data, { runScripts: "dangerously" });
-        //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
-
-        var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
-
-        if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
-          const wineMetadata = pageInfo.vintage.wine;
-
-          if (wineMetadata.statistics) {
-            wineInfo.rating_score = wineMetadata.statistics.ratings_average;
-            wineInfo.rating_count = wineMetadata.statistics.ratings_count;
-            wineInfo.ratings_all_vintages = true;
-          }
-        }
-
-        req.on("error", function(err) {
-          reject({ source: context, message: err.toString(), exactQuery: query });
-        });
-      });
-    }
   });
 }
 
