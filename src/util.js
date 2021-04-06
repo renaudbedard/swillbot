@@ -164,7 +164,7 @@ function formatError(err) {
     attachments: [
       {
         color: "#ff0000",
-        text: err.message
+        text: err.stack || err.message
       }
     ]
   };

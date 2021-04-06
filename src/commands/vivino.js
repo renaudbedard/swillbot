@@ -52,7 +52,6 @@ function scrapeWineInfo(query) {
           country: country,
           emojiPrefix: null
         });
-
       } catch (err) {
         reject({
           source: context,
@@ -212,7 +211,7 @@ const handler = async function(payload, res) {
       )
     );
 
-    const wineDetails = await Promise.all(wineInfos.map(x => x.inError ? x : scrapeWineDetails(x))).catch(util.onErrorRethrow);
+    const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
 
