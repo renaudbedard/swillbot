@@ -96,7 +96,8 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             type: type,
             format: format,
             price: price,
-            inStock: inStock
+            inStockOnline: inStockOnline,
+            inStockShelf: inStockShelf
           });
           return;
         }
