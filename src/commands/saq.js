@@ -128,7 +128,6 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
   });
 }
 
-/*
 function scrapeWineDetails(wineInfo) {
   const context = `Fetching wine details for '${wineInfo.name}'`;
   return new Promise((resolve, reject) => {
@@ -141,48 +140,25 @@ function scrapeWineDetails(wineInfo) {
         data = data.toString("utf8");
       }
 
-      // TODO: do we need to run scripts at all?
-      //const dom = new JSDOM(data, { runScripts: "dangerously" });
       const dom = new JSDOM(data);
-      //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
+      var singleResult = dom.window.document.querySelector(".detailed");
+      if (singleResult) {
+        var mainContent = dom.window.document.querySelector("#maincontent");
+        var regionElem = mainContent.querySelector('ul.list-attributs strong[data-th="Région"]');
+        var appelationElem = mainContent.querySelector('ul.list-attributs strong[data-th="Appellation d\'origine"]');
+        var cepageElem = mainContent.querySelector('ul.list-attributs strong[data-th="Cépage"]');
+        var alcoolElem = mainContent.querySelector('ul.list-attributs strong[data-th="Degré d\'alcool"]');
+        var sucreElem = mainContent.querySelector('ul.list-attributs strong[data-th="Taux de sucre"]');
+        var producteurElem = mainContent.querySelector('ul.list-attributs strong[data-th="Producteur"]');
+        var agentElem = mainContent.querySelector('ul.list-attributs strong[data-th="Agent promotionnel"]');
 
-      if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
-        const wineMetadata = pageInfo.vintage.wine;
-
-        if (wineMetadata.grapes) {
-          wineInfo.grapes = wineMetadata.grapes.map(x => x.name).join(", ");
-        }
-
-        if (wineMetadata.type_id) {
-          switch (wineMetadata.type_id) {
-            case 1:
-              wineInfo.type = "Red wine";
-              break;
-            case 2:
-              wineInfo.type = "White wine";
-              wineInfo.emojiPrefix = "white";
-              break;
-            case 3:
-              wineInfo.type = "Sparkling wine";
-              break;
-            case 4:
-              wineInfo.type = "Rosé wine";
-              wineInfo.emojiPrefix = "rosé";
-              break;
-            case 24:
-              wineInfo.type = "Fortified wine";
-              break;
-            case 7:
-              wineInfo.type = "Dessert wine";
-              break;
-          }
-        }
-
-        if (wineInfo.rating_count == 0 && wineMetadata.statistics) {
-          wineInfo.rating_score = wineMetadata.statistics.ratings_average;
-          wineInfo.rating_count = wineMetadata.statistics.ratings_count;
-          wineInfo.ratings_all_vintages = true;
-        }
+        if (regionElem) wineInfo.region = regionElem.textContent.trim();
+        if (appelationElem) wineInfo.appelation = appelationElem.textContent.trim();
+        if (cepageElem) wineInfo.grapes = cepageElem.textContent.trim();
+        if (alcoolElem) wineInfo.alcool = alcoolElem.textContent.trim();
+        if (sucreElem) wineInfo.sucre = sucreElem.textContent.trim();
+        if (producteurElem) wineInfo.producteur = producteurElem.textContent.trim();
+        if (agentElem) wineInfo.agent = agentElem.textContent.trim();
       }
 
       resolve(wineInfo);
@@ -193,7 +169,7 @@ function scrapeWineDetails(wineInfo) {
     });
   });
 }
-*/
+
 /**
  * @param {string} source The user ID that made the request
  * @param {string} query The original request
@@ -228,13 +204,19 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     let ratingString = ""; // `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
     let typeString = "";
     if (wineInfo.type) {
-      typeString = `${wineInfo.type} — `;
+      typeString = `${wineInfo.type} — ${wineInfo.country}`;
+    }
+    if (wineInfo.region) {
+      typeString = `${typeString}, ${wineInfo.region}`;
+    }
+    if (wineInfo.appelation) {
+      typeString = `${typeString} (${wineInfo.appelation})`;
     }
     let attachment = {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
       thumb_url: wineInfo.label_url,
-      text: `${ratingString}\n_${typeString}${wineInfo.country}_\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
+      text: `${ratingString}\n_${typeString}_\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
         wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"
       } — Tablettes : ${wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"}`
     };
@@ -243,6 +225,18 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     }
     if (wineInfo.grapes) {
       attachment.text = `${attachment.text}\n:grapes: ${wineInfo.grapes}`;
+    }
+    if (wineInfo.alcool) {
+      attachment.text = `${attachment.text}\nAlcool : ${wineInfo.alcool}`;
+    }
+    if (wineInfo.sucre) {
+      attachment.text = `${attachment.text} — Sucre : ${wineInfo.sucre}`;
+    }
+    if (wineInfo.producteur) {
+      attachment.text = `${attachment.text}\nProducteur : ${wineInfo.producteur}`;
+    }
+    if (wineInfo.agent) {
+      attachment.text = `${attachment.text}\nAgent : ${wineInfo.agent}`;
     }
     attachment.title = `${wineInfo.name}`;
 
@@ -272,9 +266,9 @@ const handler = async function(payload, res) {
       )
     );
 
-    //const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
+    const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
 
-    const message = formatWineInfoSlackMessage(payload.user_id, text, wineInfos);
+    const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
 
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
