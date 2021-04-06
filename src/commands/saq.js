@@ -34,7 +34,10 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
         var singleResult = dom.window.document.querySelector(".detailed");
         if (singleResult) {
           var mainContent = dom.window.document.querySelector("#maincontent");
-          var wineName = mainContent.querySelector(".page-title").textContent.trim();
+          var wineName = mainContent
+            .querySelector(".page-title")
+            .textContent.trim()
+            .replace(/\s{2,}/, " ");
           var wineId = mainContent.querySelector('ul.list-attributs strong[data-th="Code SAQ"]').textContent.trim();
           var winePageLink = `https://www.saq.com/fr/${wineId}`;
           var imageElem = mainContent.querySelector('#mtImageContainer img[itemprop="image"]');
@@ -73,7 +76,9 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             .replace(/\s{2,}/, " ");
           var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
           var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
-          var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", "");
+          var priceElem = cardDiv.querySelector(".price");
+          if (!priceElem) continue;
+          var price = priceElem.textContent.replace("&nbsp;", "");
           var identity = cardDiv.querySelector(".product-item-identity-format span").textContent.split("|");
           var type = identity[0].trim();
           var formatFragments = identity[1]
@@ -104,7 +109,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
 
         reject({
           source: context,
-          message: "Aucun résultat en stock!",
+          message: "Aucun résultat!",
           exactQuery: query
         });
       } catch (err) {
