@@ -180,6 +180,11 @@ function scrapeWineDetails(wineInfo) {
 }
 
 function scrapeWineScore(wineInfo) {
+  if (!wineInfo.type.toLowerCase().startsWith("vin")) {
+    resolve(wineInfo);
+    return;
+  }
+
   const context = `Search for wine '${wineInfo.name}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -286,9 +291,12 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
 
   for (let wineInfo of wineInfos) {
     const ratingSuffix = wineInfo.ratings_all_vintages ? " [all vintages]" : "";
-    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} <${wineInfo.vivino_link}|(${
-      wineInfo.rating_count
-    } ratings)${ratingSuffix}>`;
+    let ratingString = "";
+    if (wineInfo.rating_score) {
+      ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} <${wineInfo.vivino_link}|(${
+        wineInfo.rating_count
+      } ratings)${ratingSuffix}>\n`;
+    }
     let typeString = "";
     if (wineInfo.type) {
       typeString = `${wineInfo.type} — ${wineInfo.country}`;
@@ -303,7 +311,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
       thumb_url: wineInfo.label_url,
-      text: `${ratingString}\n_${typeString}_`
+      text: `${ratingString}_${typeString}_`
     };
     if (wineInfo.grapes) {
       attachment.text = `${attachment.text}\n:grapes: ${wineInfo.grapes}`;
