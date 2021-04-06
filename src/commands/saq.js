@@ -180,13 +180,13 @@ function scrapeWineDetails(wineInfo) {
 }
 
 function scrapeWineScore(wineInfo) {
-  if (!wineInfo.type.toLowerCase().startsWith("vin")) {
-    resolve(wineInfo);
-    return;
-  }
-
   const context = `Search for wine '${wineInfo.name}'`;
   return new Promise((resolve, reject) => {
+    if (!wineInfo.type.toLowerCase().startsWith("vin")) {
+      resolve(wineInfo);
+      return;
+    }
+
     let args = {
       parameters: {
         q: wineInfo.name
