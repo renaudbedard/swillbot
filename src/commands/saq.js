@@ -37,7 +37,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
           var wineName = mainContent
             .querySelector(".page-title")
             .textContent.trim()
-            .replace(/\s{2,}/, " ");
+            .replace(/\s{2,}/g, " ");
           var wineId = mainContent.querySelector('ul.list-attributs strong[data-th="Code SAQ"]').textContent.trim();
           var winePageLink = `https://www.saq.com/fr/${wineId}`;
           var imageElem = mainContent.querySelector('#mtImageContainer img[itemprop="image"]');
@@ -48,7 +48,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
           var format = mainContent
             .querySelector(".format .type")
             .textContent.trim()
-            .replace(/\s{2,}/, " ");
+            .replace(/\s{2,}/g, " ");
           var country = mainContent.querySelector(".country .type").textContent.trim();
           var inStockOnline = !mainContent.querySelector(".out-of-stock-online");
           var inStockShelf = mainContent.querySelector(".available-in-store");
@@ -73,7 +73,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
           var wineName = cardDiv
             .querySelector(".product-item-link")
             .textContent.trim()
-            .replace(/\s{2,}/, " ");
+            .replace(/\s{2,}/g, " ");
           var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
           var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
           var priceElem = cardDiv.querySelector(".price");
