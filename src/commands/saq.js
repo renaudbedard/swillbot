@@ -47,6 +47,8 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             .textContent.trim()
             .replace(/\s{2,}/, " ");
           var country = mainContent.querySelector(".country .type").textContent.trim();
+          var inStockOnline = !mainContent.querySelector(".out-of-stock-online");
+          var inStockShelf = mainContent.querySelector(".available-in-store");
 
           resolve({
             query: query,
@@ -56,23 +58,19 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             country: country,
             type: type,
             format: format,
-            price: price
+            price: price,
+            inStockOnline: inStockOnline,
+            inStockShelf: inStockShelf
           });
           return;
         }
 
+        // Multi-result case
         for (let cardDiv of dom.window.document.querySelectorAll(".product-items > li")) {
-          var inStock = cardDiv.querySelector(".in-stock");
           var wineName = cardDiv
             .querySelector(".product-item-link")
             .textContent.trim()
             .replace(/\s{2,}/, " ");
-
-          if (!inStock) {
-            console.log(`${wineName} n'a plus de stock, skipping...`);
-            continue;
-          }
-
           var winePageLink = cardDiv.querySelector(".product-item-link").getAttribute("href");
           var imageLink = cardDiv.querySelector(".product-image-photo").getAttribute("src");
           var price = cardDiv.querySelector(".price").textContent.replace("&nbsp;", "");
@@ -86,6 +84,8 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             });
           var format = `${formatFragments[0].trim()} ${formatFragments[1].trim()}`;
           var country = identity[2].trim();
+          var inStockOnline = cardDiv.querySelector(".availability-container span:first-child.in-stock");
+          var inStockShelf = cardDiv.querySelector(".availability-container span:last-child.in-stock");
 
           resolve({
             query: query,
@@ -95,7 +95,8 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             country: country,
             type: type,
             format: format,
-            price: price
+            price: price,
+            inStock: inStock
           });
           return;
         }
@@ -227,7 +228,9 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
       thumb_url: wineInfo.label_url,
-      text: `${ratingString}\n_${typeString}${wineInfo.country}_\n:dollar: ${wineInfo.price} (${wineInfo.format})`
+      text: `${ratingString}\n_${typeString}${wineInfo.country}_\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
+        wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"
+      } — Tablettes : ${wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"}`
     };
     if (wineInfos.length > 1) {
       attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
