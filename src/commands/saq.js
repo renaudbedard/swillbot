@@ -222,7 +222,7 @@ function scrapeWineScore(wineInfo) {
         parameters: {}
       };
 
-      req = restClient.get(wineInfo.link, args, function(data, _) {
+      req = restClient.get(wineInfo.vivino_link, args, function(data, _) {
         if (Buffer.isBuffer(data)) {
           data = data.toString("utf8");
         }
