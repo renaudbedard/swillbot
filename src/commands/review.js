@@ -459,7 +459,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzy
     }
 
     const untappdUser = users[i].name;
-    const reviewInfos = reviews[i];
+    const reviewInfos = reviews[i] || [];
 
     let firstReview = true;
     for (let reviewInfo of reviewInfos) {
