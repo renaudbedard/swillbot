@@ -37,7 +37,9 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
           var wineName = mainContent.querySelector(".page-title").textContent.trim();
           var wineId = mainContent.querySelector('ul.list-attributs strong[data-th="Code SAQ"]').textContent.trim();
           var winePageLink = `https://www.saq.com/fr/${wineId}`;
-          var imageLink = mainContent.querySelector('#mtImageContainer img[itemprop="image"]').getAttribute("src");
+          var imageElem = mainContent.querySelector('#mtImageContainer img[itemprop="image"]');
+          var imageLink = null;
+          if (imageElem) imageLink = imageElem.getAttribute("src");
           var price = mainContent.querySelector(".price").textContent.replace("&nbsp;", "");
           var type = mainContent.querySelector(".identity .type").textContent.trim();
           var format = mainContent
