@@ -221,7 +221,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     if (wineInfo.grapes) {
       attachment.text = `${attachment.text}\n:grapes: ${wineInfo.grapes}`;
     }
-    attachment.text = `\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
+    attachment.text = `${attachment.text}\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
       wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"
     } — Tablettes : ${wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"}`;
     if (wineInfos.length > 1) {
