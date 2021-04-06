@@ -198,12 +198,14 @@ function scrapeWineScore(wineInfo) {
 
       try {
         var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+        var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
         var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
         var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
         var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
 
         wineInfo.rating_score = averageRating;
         wineInfo.rating_count = ratingCount;
+        wineInfo.vivino_link = winePageLink;
 
         resolve(wineInfo);
       } catch (err) {
@@ -249,7 +251,9 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
   wineInfos.sort((a, b) => b.rating_score - a.rating_score);
 
   for (let wineInfo of wineInfos) {
-    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} (${wineInfo.rating_count} ratings)`;
+    let ratingString = `${util.getRatingString(wineInfo.rating_score, true, wineInfo.emojiPrefix)} <${wineInfo.vivino_link}|(${
+      wineInfo.rating_count
+    } ratings)>`;
     let typeString = "";
     if (wineInfo.type) {
       typeString = `${wineInfo.type} — ${wineInfo.country}`;
