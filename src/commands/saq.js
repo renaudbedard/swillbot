@@ -161,6 +161,15 @@ function scrapeWineDetails(wineInfo) {
         if (agentElem) wineInfo.agent = agentElem.textContent.trim();
       }
 
+      switch (wineInfo.type) {
+        case "Vin blanc":
+          wineInfo.emojiPrefix = "white";
+          break;
+        case "Vin rosé":
+          wineInfo.emojiPrefix = "rosé";
+          break;
+      }
+
       resolve(wineInfo);
     });
 
