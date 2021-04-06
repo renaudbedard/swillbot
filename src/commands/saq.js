@@ -216,15 +216,16 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
       color: "#ffcc00",
       title_link: `${wineInfo.link}`,
       thumb_url: wineInfo.label_url,
-      text: `${ratingString}\n_${typeString}_\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
-        wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"
-      } — Tablettes : ${wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"}`
+      text: `${ratingString}\n_${typeString}_`
     };
-    if (wineInfos.length > 1) {
-      attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
-    }
     if (wineInfo.grapes) {
       attachment.text = `${attachment.text}\n:grapes: ${wineInfo.grapes}`;
+    }
+    attachment.text = `\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
+      wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"
+    } — Tablettes : ${wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"}`;
+    if (wineInfos.length > 1) {
+      attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
     }
     if (wineInfo.alcool) {
       attachment.text = `${attachment.text}\nAlcool : ${wineInfo.alcool}`;
