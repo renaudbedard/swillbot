@@ -270,13 +270,7 @@ function scrapeWineScore(wineInfo) {
   });
 }
 
-/**
- * @param {string} source The user ID that made the request
- * @param {string} query The original request
- * @param {object[]} wineInfos Vivino's beer info
- * @return {string} The rich slack message
- */
-function formatWineInfoSlackMessage(source, query, wineInfos) {
+function formatWineInfoSlackMessage(source, query, wineInfos, multiResult) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -330,7 +324,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     attachment.text = `${attachment.text}\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
       wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"
     } — Tablettes : ${wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"}`;
-    if (wineInfos.length > 1) {
+    if (wineInfos.length > 1 && !multiResult) {
       attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
     }
     if (wineInfo.alcool) {
@@ -350,6 +344,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     slackMessage.attachments.push(attachment);
   }
 
+  if (multiResult) query = `~${query}`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
   return slackMessage;
@@ -385,7 +380,7 @@ const handler = async function(payload, res) {
     const wineDetails = await Promise.all(wineInfos.flat().map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
     const wineWithScore = await Promise.all(wineDetails.map(x => (x.inError ? x : scrapeWineScore(x)))).catch(util.onErrorRethrow);
 
-    const message = formatWineInfoSlackMessage(payload.user_id, text, wineWithScore);
+    const message = formatWineInfoSlackMessage(payload.user_id, text, wineWithScore, multiResult);
 
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
