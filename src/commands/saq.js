@@ -88,7 +88,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés) {
               return el.length != 0;
             });
           var format = `${formatFragments[0].trim()} ${formatFragments[1].trim()}`;
-          var country = identity[2].trim();
+          var country = identity[2] ? identity[2].trim() : "Inconnu";
           var inStockOnline = cardDiv.querySelector(".availability-container span:first-child.in-stock");
           var inStockShelf = cardDiv.querySelector(".availability-container span:last-child.in-stock");
 
