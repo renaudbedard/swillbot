@@ -383,10 +383,13 @@ const handler = async function(payload, res) {
     if (text.includes("+new")) {
       console.log("New!");
       nouveautés = true;
-      text = text.replace("+new", "").trim();
+      multiResult = true;
+      text = "";
     }
 
-    const wineQueries = util.getQueries(text);
+    let wineQueries = [""];
+    if (text.trim().length > 0) wineQueries = util.getQueries(text);
+
     const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés));
 
     const wineInfos = await Promise.all(
