@@ -44,6 +44,6 @@
   ],
   "license": "MIT",
   "engines": {
-    "node": "10.6.0"
+    "node": "11.x"
   }
 }
