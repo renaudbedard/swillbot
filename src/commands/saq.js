@@ -9,7 +9,7 @@ const restClient = require("../rest-client");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-function scrapeWineInfo(query, multiResult, cepage, natureOnly, webOnly) {
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, cepage) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -19,7 +19,9 @@ function scrapeWineInfo(query, multiResult, cepage, natureOnly, webOnly) {
     };
 
     if (webOnly) args.parameters.availability = "Online";
-    if (natureOnly) args.parameters.particularite = "Vin nature";
+    if (natureOnly) {
+      args.parameters.particularite = ["Vin nature", "Produit bio"];
+    }
     if (cepage) args.parameters.cepage = cepage;
 
     let req = restClient.get("https://www.saq.com/fr/catalogsearch/result/index/", args, function(data, _) {
@@ -359,14 +361,27 @@ const handler = async function(payload, res) {
 
     // special tokens
     let multiResult = false;
+    let natureOnly = false;
+    let webOnly = false;
+
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
       multiResult = true;
       text = text.substring(1);
     }
+    if (text.contains("+nature")) {
+      console.log("Nature!");
+      natureOnly = true;
+      text = text.replace("+nature", "").trim();
+    }
+    if (text.startsWith("+web")) {
+      console.log("Web!");
+      webOnly = true;
+      text = text.replace("+web", "").trim();
+    }
 
     const wineQueries = util.getQueries(text);
-    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult));
+    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly));
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
