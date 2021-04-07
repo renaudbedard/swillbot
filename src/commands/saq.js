@@ -17,7 +17,6 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés) {
     if (query) args.parameters.q = query;
     if (webOnly) args.parameters.availability = "Online";
     if (natureOnly) args.parameters.particularite = ["Vin nature", "Produit bio"];
-    if (cepage) args.parameters.cepage = cepage;
 
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
     if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
