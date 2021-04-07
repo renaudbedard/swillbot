@@ -9,7 +9,7 @@ const restClient = require("../rest-client");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
+function scrapeWineInfo(query, multiResult, cepage, natureOnly, webOnly) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -69,6 +69,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
         }
 
         // Multi-result case
+        let results = [];
         for (let cardDiv of dom.window.document.querySelectorAll(".product-items > li")) {
           var wineName = cardDiv
             .querySelector(".product-item-link")
@@ -92,7 +93,7 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
           var inStockOnline = cardDiv.querySelector(".availability-container span:first-child.in-stock");
           var inStockShelf = cardDiv.querySelector(".availability-container span:last-child.in-stock");
 
-          resolve({
+          let result = {
             query: query,
             name: wineName,
             link: winePageLink,
@@ -103,7 +104,16 @@ function scrapeWineInfo(query, cepage, natureOnly, webOnly) {
             price: price,
             inStockOnline: inStockOnline,
             inStockShelf: inStockShelf
-          });
+          };
+          if (multiResult && (inStockOnline || inStockShelf)) results.push(result);
+          else {
+            resolve(result);
+            return;
+          }
+        }
+
+        if (multiResult && results.length > 0) {
+          resolve(results);
           return;
         }
 
@@ -350,8 +360,16 @@ const handler = async function(payload, res) {
 
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
+
+    // special tokens
+    let multiResult = false;
+    if (text.startsWith("~")) {
+      multiResult = true;
+      text = text.substring(1);
+    }
+
     const wineQueries = util.getQueries(text);
-    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim()));
+    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult));
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
@@ -362,7 +380,7 @@ const handler = async function(payload, res) {
       )
     );
 
-    const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
+    const wineDetails = await Promise.all(wineInfos.flat().map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
     const wineWithScore = await Promise.all(wineDetails.map(x => (x.inError ? x : scrapeWineScore(x)))).catch(util.onErrorRethrow);
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineWithScore);
