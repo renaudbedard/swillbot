@@ -9,22 +9,20 @@ const restClient = require("../rest-client");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, cepage) {
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
-    let args = {
-      parameters: {
-        q: query
-      }
-    };
+    let args = { parameters: {} };
 
+    if (query) args.parameters.q = query;
     if (webOnly) args.parameters.availability = "Online";
-    if (natureOnly) {
-      args.parameters.particularite = ["Vin nature", "Produit bio"];
-    }
+    if (natureOnly) args.parameters.particularite = ["Vin nature", "Produit bio"];
     if (cepage) args.parameters.cepage = cepage;
 
-    let req = restClient.get("https://www.saq.com/fr/catalogsearch/result/index/", args, function(data, _) {
+    let url = "https://www.saq.com/fr/catalogsearch/result/index/";
+    if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
+
+    let req = restClient.get(url, args, function(data, _) {
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
       }
@@ -365,6 +363,7 @@ const handler = async function(payload, res) {
     let multiResult = false;
     let natureOnly = false;
     let webOnly = false;
+    let nouveautés = false;
 
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
@@ -381,9 +380,14 @@ const handler = async function(payload, res) {
       webOnly = true;
       text = text.replace("+web", "").trim();
     }
+    if (text.includes("+new")) {
+      console.log("New!");
+      nouveautés = true;
+      text = text.replace("+new", "").trim();
+    }
 
     const wineQueries = util.getQueries(text);
-    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly));
+    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés));
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
