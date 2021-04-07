@@ -105,8 +105,9 @@ function scrapeWineInfo(query, multiResult, cepage, natureOnly, webOnly) {
             inStockOnline: inStockOnline,
             inStockShelf: inStockShelf
           };
-          if (multiResult && (inStockOnline || inStockShelf)) results.push(result);
-          else {
+          if (multiResult) {
+            if (inStockOnline || inStockShelf) results.push(result);
+          } else {
             resolve(result);
             return;
           }
