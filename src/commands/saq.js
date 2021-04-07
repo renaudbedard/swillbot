@@ -69,7 +69,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés) {
 
         // Multi-result case
         let results = [];
-        for (let cardDiv of dom.window.document.querySelectorAll(".product-items > li")) {
+        for (let cardDiv of dom.window.document.querySelectorAll("#maincontent .product-items > li")) {
           var wineName = cardDiv
             .querySelector(".product-item-link")
             .textContent.trim()
