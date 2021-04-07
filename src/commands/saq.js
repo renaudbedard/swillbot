@@ -272,7 +272,7 @@ function scrapeWineScore(wineInfo) {
   });
 }
 
-function formatWineInfoSlackMessage(source, query, wineInfos, multiResult) {
+function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -347,6 +347,8 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult) {
   }
 
   if (multiResult) query = `~${query}`;
+  if (nature) query = `${query} +nature`;
+  if (web) query = `${query} +web`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
   return slackMessage;
@@ -395,7 +397,7 @@ const handler = async function(payload, res) {
     const wineDetails = await Promise.all(wineInfos.flat().map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
     const wineWithScore = await Promise.all(wineDetails.map(x => (x.inError ? x : scrapeWineScore(x)))).catch(util.onErrorRethrow);
 
-    const message = formatWineInfoSlackMessage(payload.user_id, text, wineWithScore, multiResult);
+    const message = formatWineInfoSlackMessage(payload.user_id, text, wineWithScore, multiResult, natureOnly, webOnly);
 
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
