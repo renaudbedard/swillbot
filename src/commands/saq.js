@@ -359,11 +359,12 @@ const handler = async function(payload, res) {
     res.status(200).json(util.formatReceipt());
 
     // strip newlines and replace with spaces
-    let text = payload.text.replace(/[\n\r]/g, " ");
+    let text = payload.text.replace(/[\n\r]/g, " ").trim();
 
     // special tokens
     let multiResult = false;
     if (text.startsWith("~")) {
+      console.log("Multi-result query!");
       multiResult = true;
       text = text.substring(1);
     }
