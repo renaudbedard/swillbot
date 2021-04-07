@@ -369,12 +369,12 @@ const handler = async function(payload, res) {
       multiResult = true;
       text = text.substring(1);
     }
-    if (text.contains("+nature")) {
+    if (text.includes("+nature")) {
       console.log("Nature!");
       natureOnly = true;
       text = text.replace("+nature", "").trim();
     }
-    if (text.startsWith("+web")) {
+    if (text.includes("+web")) {
       console.log("Web!");
       webOnly = true;
       text = text.replace("+web", "").trim();
