@@ -22,11 +22,13 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
       if (!maxPrice) maxPrice = 9999;
       args.parameters.price = `${minPrice}-${maxPrice}`;
     }
-    console.log(JSON.stringify(args.parameters));
 
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
     if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
     else if (!query || query.length == 0) "https://www.saq.com/fr/produits";
+
+    console.log(`url : ${url}`);
+    console.log(JSON.stringify(args.parameters));
 
     let req = restClient.get(url, args, function(data, _) {
       if (Buffer.isBuffer(data)) {
