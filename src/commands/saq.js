@@ -22,6 +22,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
       if (!maxPrice) maxPrice = 9999;
       args.parameters.price = `${minPrice}-${maxPrice}`;
     }
+    console.log(JSON.stringify(args.parameters));
 
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
     if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
