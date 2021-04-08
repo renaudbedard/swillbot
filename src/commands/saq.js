@@ -402,7 +402,7 @@ const handler = async function(payload, res) {
     }
 
     var priceRegex = /<(\d+)\$/;
-    var priceMatches = text.matches(priceRegex);
+    var priceMatches = text.match(priceRegex);
     if (priceMatches) {
       console.log("Price!");
       maxPrice = priceMatches[1].trim();
