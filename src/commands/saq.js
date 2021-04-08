@@ -9,7 +9,7 @@ const restClient = require("../rest-client");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, maxPrice) {
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = { parameters: {} };
@@ -17,7 +17,11 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, ma
     if (query) args.parameters.q = query;
     if (webOnly) args.parameters.availability = "Online";
     if (natureOnly) args.parameters.particularite = ["Vin nature", "Produit bio"];
-    if (maxPrice) args.parameters.price = `0-${maxPrice}`;
+    if (minPrice || maxPrice) {
+      if (!minPrice) minPrice = 0;
+      if (!maxPrice) maxPrice = 9999;
+      args.parameters.price = `${minPrice}-${maxPrice}`;
+    }
 
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
     if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
@@ -272,7 +276,7 @@ function scrapeWineScore(wineInfo) {
   });
 }
 
-function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, maxPrice) {
+function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, minPrice, maxPrice) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -359,6 +363,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
   if (nature) query = `${query} +nature`;
   if (web) query = `${query} +web`;
   if (nouveautés) query = `${query} +new`;
+  if (minPrice) query = `${query} >${minPrice}$`;
   if (maxPrice) query = `${query} <${maxPrice}$`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
@@ -378,6 +383,7 @@ const handler = async function(payload, res) {
     let webOnly = false;
     let nouveautés = false;
     let maxPrice = null;
+    let minPrice = 0;
 
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
@@ -394,12 +400,19 @@ const handler = async function(payload, res) {
       webOnly = true;
       text = text.replace("+web", "").trim();
     }
-    var priceRegex = /<(\d+)\$/;
-    var priceMatches = text.match(priceRegex);
-    if (priceMatches) {
-      console.log("Price!");
-      maxPrice = priceMatches[1].trim();
-      text = text.replace(priceRegex, "");
+    var maxPriceRegex = /<(\d+)\$/;
+    var maxPriceMatches = text.match(maxPriceRegex);
+    if (maxPriceMatches) {
+      console.log("Max Price!");
+      maxPrice = maxPriceMatches[1].trim();
+      text = text.replace(maxPriceRegex, "");
+    }
+    var minPriceRegex = />(\d+)\$/;
+    var minPriceMatches = text.match(minPriceRegex);
+    if (minPriceMatches) {
+      console.log("Min Price!");
+      minPrice = minPriceMatches[1].trim();
+      text = text.replace(minPriceRegex, "");
     }
     if (text.includes("+new")) {
       console.log("New!");
@@ -411,7 +424,7 @@ const handler = async function(payload, res) {
     let wineQueries = [""];
     if (text.trim().length > 0) wineQueries = util.getQueries(text);
 
-    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, maxPrice));
+    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice));
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
@@ -425,7 +438,17 @@ const handler = async function(payload, res) {
     const wineDetails = await Promise.all(wineInfos.flat().map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
     const wineWithScore = await Promise.all(wineDetails.map(x => (x.inError ? x : scrapeWineScore(x)))).catch(util.onErrorRethrow);
 
-    const message = formatWineInfoSlackMessage(payload.user_id, text, wineWithScore, multiResult, natureOnly, webOnly, nouveautés, maxPrice);
+    const message = formatWineInfoSlackMessage(
+      payload.user_id,
+      text,
+      wineWithScore,
+      multiResult,
+      natureOnly,
+      webOnly,
+      nouveautés,
+      minPrice,
+      maxPrice
+    );
 
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
