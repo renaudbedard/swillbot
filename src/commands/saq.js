@@ -272,7 +272,7 @@ function scrapeWineScore(wineInfo) {
   });
 }
 
-function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés) {
+function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, maxPrice) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
