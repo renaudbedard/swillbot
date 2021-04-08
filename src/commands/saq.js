@@ -394,19 +394,18 @@ const handler = async function(payload, res) {
       webOnly = true;
       text = text.replace("+web", "").trim();
     }
-    if (text.includes("+new")) {
-      console.log("New!");
-      nouveautés = true;
-      multiResult = true;
-      text = "";
-    }
-
     var priceRegex = /<(\d+)\$/;
     var priceMatches = text.match(priceRegex);
     if (priceMatches) {
       console.log("Price!");
       maxPrice = priceMatches[1].trim();
       text = text.replace(priceRegex, "");
+    }
+    if (text.includes("+new")) {
+      console.log("New!");
+      nouveautés = true;
+      multiResult = true;
+      text = "";
     }
 
     let wineQueries = [""];
