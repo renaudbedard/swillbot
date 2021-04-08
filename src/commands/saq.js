@@ -26,6 +26,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
 
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
     if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
+    else if (!query || query.length == 0) "https://www.saq.com/fr/produits";
 
     let req = restClient.get(url, args, function(data, _) {
       if (Buffer.isBuffer(data)) {
