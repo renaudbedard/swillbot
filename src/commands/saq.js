@@ -161,6 +161,7 @@ function scrapeWineDetails(wineInfo) {
         var sucreElem = mainContent.querySelector('ul.list-attributs strong[data-th="Taux de sucre"]');
         var producteurElem = mainContent.querySelector('ul.list-attributs strong[data-th="Producteur"]');
         var agentElem = mainContent.querySelector('ul.list-attributs strong[data-th="Agent promotionnel"]');
+        var descElem = mainContent.querySelector(".wrapper-description .wrapper-content-info p:first-child");
 
         if (regionElem) wineInfo.region = regionElem.textContent.trim();
         if (appelationElem) wineInfo.appelation = appelationElem.textContent.trim();
@@ -169,6 +170,7 @@ function scrapeWineDetails(wineInfo) {
         if (sucreElem) wineInfo.sucre = sucreElem.textContent.trim();
         if (producteurElem) wineInfo.producteur = producteurElem.textContent.trim();
         if (agentElem) wineInfo.agent = agentElem.textContent.trim();
+        if (descElem) wineInfo.description = descElem.textContent.trim();
       }
 
       switch (wineInfo.type) {
@@ -339,6 +341,15 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
       attachment.text = `${attachment.text}\nAgent : ${wineInfo.agent}`;
     }
     attachment.title = `${wineInfo.name}`;
+
+    if (wineInfo.description)
+      attachment.fields = [
+        {
+          title: "Infos détaillées",
+          value: wineInfo.description,
+          short: false
+        }
+      ];
 
     slackMessage.attachments.push(attachment);
   }
