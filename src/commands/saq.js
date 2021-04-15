@@ -8,6 +8,7 @@ const util = require("../util");
 const restClient = require("../rest-client");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const nodeUtil = require("util");
 
 function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice) {
   const context = `Search for wine '${query}'`;
@@ -35,7 +36,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
         data = data.toString("utf8");
       }
 
-      console.log(`raw response : \n${JSON.stringify(response)}`);
+      console.log(`raw response : \n${nodeUtil.inspect(response)}`);
 
       const dom = new JSDOM(data);
 
