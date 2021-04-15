@@ -35,6 +35,8 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
         data = data.toString("utf8");
       }
 
+      console.log(`raw data : \n${data}`);
+
       const dom = new JSDOM(data);
 
       try {
@@ -142,7 +144,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
     });
 
     req.on("error", function(err) {
-      reject({ source: context, message: err.toString(), exactQuery: query });
+      reject({ source: context, message: err.stack, exactQuery: query });
     });
   });
 }
