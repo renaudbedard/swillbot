@@ -30,12 +30,12 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
     console.log(`url : ${url}`);
     console.log(JSON.stringify(args.parameters));
 
-    let req = restClient.get(url, args, function(data, _) {
+    let req = restClient.get(url, args, function(data, response) {
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
       }
 
-      console.log(`raw data : \n${data}`);
+      console.log(`raw response : \n${response}`);
 
       const dom = new JSDOM(data);
 
