@@ -10,10 +10,19 @@ const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const nodeUtil = require("util");
 
+const httpHeaders = {
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
+  "accept-encoding": "gzip, deflate, br",
+  accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+};
+
 function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
-    let args = { parameters: {} };
+    let args = {
+      parameters: {},
+      headers: httpHeaders
+    };
 
     if (query) args.parameters.q = query;
     if (webOnly) args.parameters.availability = "Online";
@@ -36,7 +45,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
         data = data.toString("utf8");
       }
 
-      //console.log(`raw response : \n${nodeUtil.inspect(response)}`);
+      console.log(`raw response : \n${nodeUtil.inspect(response)}`);
 
       const dom = new JSDOM(data);
 
@@ -154,7 +163,8 @@ function scrapeWineDetails(wineInfo) {
   const context = `Fetching wine details for '${wineInfo.name}'`;
   return new Promise((resolve, reject) => {
     let args = {
-      parameters: {}
+      parameters: {},
+      headers: httpHeaders
     };
 
     let req = restClient.get(wineInfo.link, args, function(data, _) {
