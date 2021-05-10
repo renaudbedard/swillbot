@@ -45,7 +45,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
         data = data.toString("utf8");
       }
 
-      //console.log(`raw response : \n${nodeUtil.inspect(response)}`);
+      console.log(`raw response : \n${nodeUtil.inspect(response)}`);
 
       const dom = new JSDOM(data);
 
