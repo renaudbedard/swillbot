@@ -128,7 +128,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
             inStockShelf: inStockShelf
           };
           if (multiResult) {
-            if (inStockOnline || inStockShelf) results.push(result);
+            if (inStockOnline || inStockShelf || soon || loterie) results.push(result);
           } else {
             resolve(result);
             return;
