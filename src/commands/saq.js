@@ -295,7 +295,7 @@ function scrapeWineScore(wineInfo) {
   });
 }
 
-function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, minPrice, maxPrice) {
+function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, minPrice, maxPrice, loterie, soon) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -382,6 +382,8 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
   if (nature) query = `${query} +nature`;
   if (web) query = `${query} +web`;
   if (nouveautés) query = `${query} +new`;
+  if (soon) query = `${query} +soon`;
+  if (loterie) query = `${query} +loterie`;
   if (minPrice) query = `${query} >${minPrice}$`;
   if (maxPrice) query = `${query} <${maxPrice}$`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
@@ -482,7 +484,9 @@ const handler = async function(payload, res) {
       webOnly,
       nouveautés,
       minPrice,
-      maxPrice
+      maxPrice,
+      loterie,
+      soon
     );
 
     util.sendDelayedResponse(message, payload.response_url);
