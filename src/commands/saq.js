@@ -16,7 +16,7 @@ const httpHeaders = {
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
 };
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice) {
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -32,6 +32,8 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
       if (!maxPrice) maxPrice = 9999;
       args.parameters.price = `${minPrice}-${maxPrice}`;
     }
+    if (loterie) args.parameters.availability = `In a lottery${soon ? " shortly" : ""}`;
+    else if (soon) args.parameters.availability = "Coming soon";
 
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
     if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
@@ -401,6 +403,8 @@ const handler = async function(payload, res) {
     let nouveautés = false;
     let maxPrice = null;
     let minPrice = 0;
+    let loterie = false;
+    let soon = false;
 
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
@@ -416,6 +420,18 @@ const handler = async function(payload, res) {
       console.log("Web!");
       webOnly = true;
       text = text.replace("+web", "").trim();
+    }
+    if (text.includes("+soon")) {
+      console.log("Soon!");
+      soon = true;
+      multiResult = true;
+      text = text.replace("+soon", "").trim();
+    }
+    if (text.includes("+loterie")) {
+      console.log("Loterie!");
+      loterie = true;
+      multiResult = true;
+      text = text.replace("+loterie", "").trim();
     }
     var maxPriceRegex = /<(\d+)\$/;
     var maxPriceMatches = text.match(maxPriceRegex);
@@ -441,7 +457,9 @@ const handler = async function(payload, res) {
     let wineQueries = [""];
     if (text.trim().length > 0) wineQueries = util.getQueries(text);
 
-    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice));
+    const wineInfoPromises = wineQueries.map(x =>
+      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon)
+    );
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
