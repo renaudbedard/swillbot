@@ -399,7 +399,7 @@ const handler = async function(payload, res) {
         response_type: "in_channel",
         attachments: [
           {
-            title: "Options principales"
+            title: "Options principales",
             fields: [
               {
                 title: "Recherche simple",
@@ -408,11 +408,11 @@ const handler = async function(payload, res) {
               {
                 title: "Recherche mutiple",
                 value: "`/saq ~sauternes`\nRetourne tous les produits en stock qui correspondent à la recherche."
-              },              
+              }
             ]
           },
           {
-            title: "Modificateurs"
+            title: "Modificateurs",
             fields: [
               {
                 title: "Vins natures ou bio",
@@ -421,34 +421,34 @@ const handler = async function(payload, res) {
               {
                 title: "Produits disponibles en ligne",
                 value: "`+web`"
-              },              
+              },
               {
                 title: "Produits disponibles bientôt",
                 value: "`+soon`"
-              },                      
+              },
               {
                 title: "Produits en loterie",
                 value: "`+loterie`"
-              },                 
+              },
               {
                 title: "Produits en loterie bientôt",
                 value: "`+loterie +soon`"
-              },                                          
+              },
               {
                 title: "Intervalle de prix",
                 value: "`<100$ >15$`\nOn peut utilise seulement `>` ou `<`, ou les deux."
-              },              
+              }
             ]
           },
           {
-            title: "Recherches spéciales"
+            title: "Recherches spéciales",
             fields: [
               {
                 title: "Produits nouvellement disponibles",
                 value: "`/saq +new`\nImplique un `~` et peut être appelé sans terme de recherche. Peut être combiné avec des modificateurs."
-              },
+              }
             ]
-          }              
+          }
         ]
       });
       return;
