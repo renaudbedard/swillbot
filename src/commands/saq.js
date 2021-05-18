@@ -399,53 +399,48 @@ const handler = async function(payload, res) {
         response_type: "in_channel",
         attachments: [
           {
-            title: "Options principales",
+            title: ":mag: Options principales",
             fields: [
               {
-                title: "Recherche simple",
-                value: "`/saq fou du beaujo`\nRetourne le premier produit qui correspond à la recherche. (qu'il soit en stock ou non)"
+                title: "Recherche simple : `/saq fou du beaujo`",
+                value: "Retourne le premier produit qui correspond à la recherche. (qu'il soit en stock ou non)"
               },
               {
-                title: "Recherche mutiple",
-                value: "`/saq ~sauternes`\nRetourne tous les produits en stock qui correspondent à la recherche."
+                title: "Recherche mutiple : `/saq ~sauternes`",
+                value: "Retourne tous les produits en stock qui correspondent à la recherche."
               }
             ]
           },
           {
-            title: "Modificateurs",
+            title: ":gear: Modificateurs",
             fields: [
               {
-                title: "Vins natures ou bio",
-                value: "`+nature`"
+                title: "Vins natures ou bio : `+nature`"
               },
               {
-                title: "Produits disponibles en ligne",
-                value: "`+web`"
+                title: "Produits disponibles en ligne : `+web`"
               },
               {
-                title: "Produits disponibles bientôt",
-                value: "`+soon`"
+                title: "Produits disponibles bientôt : `+soon`"
               },
               {
-                title: "Produits en loterie",
-                value: "`+loterie`"
+                title: "Produits en loterie : `+loterie`"
               },
               {
-                title: "Produits en loterie bientôt",
-                value: "`+loterie +soon`"
+                title: "Produits en loterie bientôt : `+loterie +soon`"
               },
               {
-                title: "Intervalle de prix",
-                value: "`<100$ >15$`\nOn peut utilise seulement `>` ou `<`, ou les deux."
+                title: "Intervalle de prix : `<100$ >15$`",
+                value: "On peut utiliser seulement `>` ou `<`, ou les deux."
               }
             ]
           },
           {
-            title: "Recherches spéciales",
+            title: ":star2: Recherches spéciales",
             fields: [
               {
-                title: "Produits nouvellement disponibles",
-                value: "`/saq +new`\nImplique un `~` et peut être appelé sans terme de recherche. Peut être combiné avec des modificateurs."
+                title: "Produits nouvellement disponibles : `/saq +new`",
+                value: "Implique un `~` et peut être appelé sans terme de recherche. Peut être combiné avec des modificateurs."
               }
             ]
           }
