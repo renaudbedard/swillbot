@@ -393,6 +393,67 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
 
 const handler = async function(payload, res) {
   try {
+    if (payload.text.trim().length == 0) {
+      // help function
+      res.status(200).json({
+        response_type: "in_channel",
+        attachments: [
+          {
+            title: "Options principales"
+            fields: [
+              {
+                title: "Recherche simple",
+                value: "`/saq fou du beaujo`\nRetourne le premier produit qui correspond à la recherche. (qu'il soit en stock ou non)"
+              },
+              {
+                title: "Recherche mutiple",
+                value: "`/saq ~sauternes`\nRetourne tous les produits en stock qui correspondent à la recherche."
+              },              
+            ]
+          },
+          {
+            title: "Modificateurs"
+            fields: [
+              {
+                title: "Vins natures ou bio",
+                value: "`+nature`"
+              },
+              {
+                title: "Produits disponibles en ligne",
+                value: "`+web`"
+              },              
+              {
+                title: "Produits disponibles bientôt",
+                value: "`+soon`"
+              },                      
+              {
+                title: "Produits en loterie",
+                value: "`+loterie`"
+              },                 
+              {
+                title: "Produits en loterie bientôt",
+                value: "`+loterie +soon`"
+              },                                          
+              {
+                title: "Intervalle de prix",
+                value: "`<100$ >15$`\nOn peut utilise seulement `>` ou `<`, ou les deux."
+              },              
+            ]
+          },
+          {
+            title: "Recherches spéciales"
+            fields: [
+              {
+                title: "Produits nouvellement disponibles",
+                value: "`/saq +new`\nImplique un `~` et peut être appelé sans terme de recherche. Peut être combiné avec des modificateurs."
+              },
+            ]
+          }              
+        ]
+      });
+      return;
+    }
+
     res.status(200).json(util.formatReceipt());
 
     // strip newlines and replace with spaces
