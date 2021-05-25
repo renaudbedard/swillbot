@@ -348,9 +348,14 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
     if (wineInfo.grapes) {
       attachment.text = `${attachment.text}\n:grapes: ${wineInfo.grapes}`;
     }
-    attachment.text = `${attachment.text}\n:dollar: ${wineInfo.price} (${wineInfo.format})\nEn ligne : ${
-      wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"
-    } — Tablettes : ${wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"}`;
+    attachment.text = `${attachment.text}\n:dollar: ${wineInfo.price} (${wineInfo.format})`;
+    if (soon && loterie) attachment.text = `${attachment.text}\n:crossed_fingers::clock2: En loterie bientôt`;
+    else if (soon) attachment.text = `${attachment.text}\n:clock2: Disponible bientôt`;
+    else if (loterie) attachment.text = `${attachment.text}\n:crossed_fingers: En loterie`;
+    else
+      attachment.text = `${attachment.text}\nEn ligne : ${wineInfo.inStockOnline ? ":white_check_mark:" : ":x:"} — Tablettes : ${
+        wineInfo.inStockShelf ? ":white_check_mark:" : ":x:"
+      }`;
     if (wineInfos.length > 1 && !multiResult) {
       attachment.text = `:mag: \`${wineInfo.query}\`\n${attachment.text}`;
     }
