@@ -35,6 +35,8 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
     if (loterie) args.parameters.availability = `In a lottery${soon ? " shortly" : ""}`;
     else if (soon) args.parameters.availability = "Coming soon";
 
+    args.parameters.product_list_limit = 96;
+
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
     if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
     else if (!query || query.length == 0) url = "https://www.saq.com/fr/produits";
