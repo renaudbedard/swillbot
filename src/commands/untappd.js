@@ -75,6 +75,20 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
 
 const handler = async function(payload, res) {
   try {
+    // for the lulz
+    if (payload.text.includes("kill VIP")) {
+      res.status(200).json({
+        response_type: "in_channel",
+        attachments: [
+          {
+            title: "KILL MODE ACTIVATED",
+            text: ":robot_face: :knife: :wine_glass::100:"
+          }
+        ]
+      });
+      return;
+    }
+
     res.status(200).json(util.formatReceipt());
 
     // strip newlines and replace with spaces
