@@ -451,11 +451,12 @@ const handler = async function(payload, res) {
                 value: "On peut utiliser seulement `>` ou `<`, ou les deux."
               },
               {
-                title: "Cépage : `+cépage cabernet franc`",
+                title: "Cépage(s) : `+cépage cabernet franc`, `+cépages (gamay, chardonnay)`",
+                value: "Pour plusieurs cépages, utiliser le pluriel et les parenthèses, et séparer par des virgules."
               },
               {
-                title: "Cépages : `+cépages (gamay, chardonnay)`",
-                value: "Pour plusieurs cépages, utiliser le pluriel et les parenthèses, et séparer par des virgules."
+                title: "Appellation(s) : `+aoc morgon`, `+cépages (morgon, juliénas)`",
+                value: "Pour plusieurs appellations, utiliser des parenthèses et séparer par des virgules."
               }
             ]
           },
