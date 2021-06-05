@@ -531,7 +531,7 @@ const handler = async function(payload, res) {
     var cépageMatches = text.match(cépageRegex);
     if (cépageMatches) {
       console.log("Cépage!");
-      cépages = [cépagesMatches[1].trim()];
+      cépages = [cépageMatches[1].trim()];
       text = text.replace(cépageRegex, "");
     }
     var cépagesRegex = /\+cépages \(([^\)]+)\)/;
