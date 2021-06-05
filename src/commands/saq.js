@@ -399,7 +399,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
   if (loterie) query = `${query} +loterie`;
   if (minPrice) query = `${query} >${minPrice}$`;
   if (maxPrice) query = `${query} <${maxPrice}$`;
-  if (cépages.length > 0) query = `${query} cépages=${cépages.join(",")}`;
+  if (cépages.length > 0) query = `${query} +cépage ${cépages.join(",")}`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
   return slackMessage;
