@@ -455,7 +455,7 @@ const handler = async function(payload, res) {
                 value: "Pour plusieurs cépages, utiliser le pluriel et les parenthèses, et séparer par des virgules."
               },
               {
-                title: "Appellation(s) : `+aoc morgon`, `+cépages (morgon, juliénas)`",
+                title: "Appellation(s) : `+aoc morgon`, `+aoc (morgon, juliénas)`",
                 value: "Pour plusieurs appellations, utiliser des parenthèses et séparer par des virgules."
               }
             ]
