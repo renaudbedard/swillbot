@@ -524,7 +524,7 @@ const handler = async function(payload, res) {
       minPrice = minPriceMatches[1].trim();
       text = text.replace(minPriceRegex, "");
     }
-    var cépagesRegex = /\+cépage ([\w,]+)/;
+    var cépagesRegex = /\+cépage ([\w,-]+)/;
     var cépagesMatches = text.match(cépagesRegex);
     if (cépagesMatches) {
       console.log("Cépages!");
