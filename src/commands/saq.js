@@ -20,7 +20,7 @@ function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages) {
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -40,6 +40,8 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
     else if (soon) args.parameters.availability = "Coming soon";
     if (cépages.length > 0)
       args.parameters.cepage = cépages.map(x => capitalizeFirstLetter(x));
+    if (aoc.length > 0)
+      args.parameters.appellation = aoc.map(x => capitalizeFirstLetter(x));      
 
     args.parameters.product_list_limit = 96;
 
@@ -303,7 +305,7 @@ function scrapeWineScore(wineInfo) {
   });
 }
 
-function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, minPrice, maxPrice, loterie, soon, cépages) {
+function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -400,6 +402,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
   if (minPrice) query = `${query} >${minPrice}$`;
   if (maxPrice) query = `${query} <${maxPrice}$`;
   if (cépages.length > 0) query = `${query} +cépages (${cépages.join(",")})`;
+  if (aoc.length > 0) query = `${query} +aoc (${aoc.join(",")})`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
   return slackMessage;
@@ -485,6 +488,7 @@ const handler = async function(payload, res) {
     let loterie = false;
     let soon = false;
     let cépages = [];
+    let aoc = [];
 
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
@@ -541,6 +545,20 @@ const handler = async function(payload, res) {
       cépages = cépagesMatches[1].split(",").map(e => e.trim());
       text = text.replace(cépagesRegex, "");
     }
+    var aocRegex = /\+aoc ([^\+]+)(?=\+|$)/;
+    var aocMatches = text.match(aocRegex);
+    if (aocMatches) {
+      console.log("AOC!");
+      aoc = [aocMatches[1].trim()];
+      text = text.replace(aocRegex, "");
+    }    
+    var aocRegex = /\+aoc \(([^\)]+)\)/;
+    var aocMatches = text.match(aocRegex);
+    if (aocMatches) {
+      console.log("AOCs!");
+      aoc = aocMatches[1].split(",").map(e => e.trim());
+      text = text.replace(aocRegex, "");
+    }
     if (text.includes("+new")) {
       console.log("New!");
       nouveautés = true;
@@ -552,7 +570,7 @@ const handler = async function(payload, res) {
     if (text.trim().length > 0) wineQueries = util.getQueries(text);
 
     const wineInfoPromises = wineQueries.map(x =>
-      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages)
+      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc)
     );
 
     const wineInfos = await Promise.all(
