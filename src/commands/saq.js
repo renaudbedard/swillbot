@@ -597,7 +597,8 @@ const handler = async function(payload, res) {
       maxPrice,
       loterie,
       soon,
-      cépages
+      cépages,
+      aoc
     );
 
     util.sendDelayedResponse(message, payload.response_url);
