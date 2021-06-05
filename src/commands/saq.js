@@ -448,8 +448,8 @@ const handler = async function(payload, res) {
                 value: "On peut utiliser seulement `>` ou `<`, ou les deux."
               },
               {
-                title: "Cépages : `+cépage gamay, chardonnay`",
-                value: "On peut définir un seul cépage ou un choix de multiples (séparés par des virgules)."
+                title: "Cépages : `+cépage gamay,chardonnay`",
+                value: "On peut définir un seul cépage ou un choix de multiples (séparés par des virgules mais sans espaces)."
               }
             ]
           },
