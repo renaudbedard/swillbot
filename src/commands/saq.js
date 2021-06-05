@@ -399,7 +399,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
   if (loterie) query = `${query} +loterie`;
   if (minPrice) query = `${query} >${minPrice}$`;
   if (maxPrice) query = `${query} <${maxPrice}$`;
-  if (cépages.length > 0) query = `${query} +cépage ${cépages.join(",")}`;
+  if (cépages.length > 0) query = `${query} +cépages (${cépages.join(",")})`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
   return slackMessage;
@@ -448,8 +448,11 @@ const handler = async function(payload, res) {
                 value: "On peut utiliser seulement `>` ou `<`, ou les deux."
               },
               {
-                title: "Cépages : `+cépage gamay,chardonnay`",
-                value: "On peut définir un seul cépage ou un choix de multiples (séparés par des virgules mais sans espaces)."
+                title: "Cépage : `+cépage cabernet franc`",
+              },
+              {
+                title: "Cépages : `+cépages (gamay, chardonnay)`",
+                value: "Pour plusieurs cépages, utiliser le pluriel et les parenthèses, et séparer par des virgules."
               }
             ]
           },
@@ -524,7 +527,14 @@ const handler = async function(payload, res) {
       minPrice = minPriceMatches[1].trim();
       text = text.replace(minPriceRegex, "");
     }
-    var cépagesRegex = /\+cépage ([\w,-]+)/;
+    var cépageRegex = /\+cépage ([^\+]+)(?=\+|$)/;
+    var cépageMatches = text.match(cépageRegex);
+    if (cépageMatches) {
+      console.log("Cépage!");
+      cépages = [cépagesMatches[1].trim()];
+      text = text.replace(cépageRegex, "");
+    }
+    var cépagesRegex = /\+cépages \(([^\)]+)\)/;
     var cépagesMatches = text.match(cépagesRegex);
     if (cépagesMatches) {
       console.log("Cépages!");
