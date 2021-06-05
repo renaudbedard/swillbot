@@ -545,13 +545,6 @@ const handler = async function(payload, res) {
       cépages = cépagesMatches[1].split(",").map(e => e.trim());
       text = text.replace(cépagesRegex, "");
     }
-    var aocRegex = /\+aoc ([^\+]+)(?=\+|$)/;
-    var aocMatches = text.match(aocRegex);
-    if (aocMatches) {
-      console.log("AOC!");
-      aoc = [aocMatches[1].trim()];
-      text = text.replace(aocRegex, "");
-    }    
     var aocRegex = /\+aoc \(([^\)]+)\)/;
     var aocMatches = text.match(aocRegex);
     if (aocMatches) {
@@ -559,6 +552,13 @@ const handler = async function(payload, res) {
       aoc = aocMatches[1].split(",").map(e => e.trim());
       text = text.replace(aocRegex, "");
     }
+    aocRegex = /\+aoc ([^\+]+)(?=\+|$)/;
+    aocMatches = text.match(aocRegex);
+    if (aocMatches) {
+      console.log("AOC!");
+      aoc = [aocMatches[1].trim()];
+      text = text.replace(aocRegex, "");
+    }        
     if (text.includes("+new")) {
       console.log("New!");
       nouveautés = true;
