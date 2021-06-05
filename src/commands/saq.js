@@ -16,7 +16,11 @@ const httpHeaders = {
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
 };
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon) {
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -34,6 +38,8 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
     }
     if (loterie) args.parameters.availability = `In a lottery${soon ? " shortly" : ""}`;
     else if (soon) args.parameters.availability = "Coming soon";
+    if (cépages.length > 0)
+      args.parameters.cepage = cépages.map(x => capitalizeFirstLetter(x));
 
     args.parameters.product_list_limit = 96;
 
@@ -393,6 +399,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
   if (loterie) query = `${query} +loterie`;
   if (minPrice) query = `${query} >${minPrice}$`;
   if (maxPrice) query = `${query} <${maxPrice}$`;
+  if (cépages.length > 0) query = `${query} cépages=${cépages.join(",")}$`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
 
   return slackMessage;
@@ -470,6 +477,7 @@ const handler = async function(payload, res) {
     let minPrice = 0;
     let loterie = false;
     let soon = false;
+    let cépages = [];
 
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
@@ -512,6 +520,13 @@ const handler = async function(payload, res) {
       minPrice = minPriceMatches[1].trim();
       text = text.replace(minPriceRegex, "");
     }
+    var cépagesRegex = /\+cépage ([\w,]+)/;
+    var cépagesMatches = text.match(cépagesRegex);
+    if (cépagesMatches) {
+      console.log("Cépages!");
+      cépages = cépagesMatches[1].split(",").map(e => e.trim());
+      text = text.replace(cépagesRegex, "");
+    }
     if (text.includes("+new")) {
       console.log("New!");
       nouveautés = true;
@@ -523,7 +538,7 @@ const handler = async function(payload, res) {
     if (text.trim().length > 0) wineQueries = util.getQueries(text);
 
     const wineInfoPromises = wineQueries.map(x =>
-      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon)
+      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages)
     );
 
     const wineInfos = await Promise.all(
@@ -549,7 +564,8 @@ const handler = async function(payload, res) {
       minPrice,
       maxPrice,
       loterie,
-      soon
+      soon,
+      cépages
     );
 
     util.sendDelayedResponse(message, payload.response_url);
