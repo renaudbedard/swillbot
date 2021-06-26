@@ -20,7 +20,7 @@ function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé) {
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé, orange) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -46,6 +46,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
     if (blanc) args.parameters.cat = 212;
     else if (rouge) args.parameters.cat = 215;
     else if (rosé) args.parameters.cat = 218;
+    else if (orange) args.parameters.particularite = ["Vin orange"];
 
     args.parameters.product_list_limit = 96;
 
@@ -325,7 +326,8 @@ function formatWineInfoSlackMessage(
   aoc,
   rouge,
   blanc,
-  rosé
+  rosé,
+  orange
 ) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
@@ -425,6 +427,7 @@ function formatWineInfoSlackMessage(
   if (rouge) query = `${query} +rouge`;
   if (blanc) query = `${query} +blanc`;
   if (rosé) query = `${query} +rosé`;
+  if (orange) query = `${query} +orange`;
   if (cépages.length > 0) query = `${query} +cépages (${cépages.join(",")})`;
   if (aoc.length > 0) query = `${query} +aoc (${aoc.join(",")})`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
@@ -483,7 +486,7 @@ const handler = async function(payload, res) {
                 value: "Pour plusieurs appellations, utiliser des parenthèses et séparer par des virgules."
               },
               {
-                title: "Vins rouges ou blancs uniquement : `+rouge`, `+blanc`, `+rosé`"
+                title: "Vins rouges ou blancs uniquement : `+rouge`, `+blanc`, `+rosé`, `+orange"
               }
             ]
           },
@@ -520,6 +523,7 @@ const handler = async function(payload, res) {
     let rouge = false;
     let blanc = false;
     let rosé = false;
+    let orange = false;
 
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
@@ -602,6 +606,10 @@ const handler = async function(payload, res) {
       console.log("Rosé!");
       rosé = true;
       text = text.replace("+rosé", "").trim();
+    } else if (text.includes("+orange")) {
+      console.log("Arrange!");
+      rosé = true;
+      text = text.replace("+orange", "").trim();
     }
     if (text.includes("+new")) {
       console.log("New!");
@@ -645,7 +653,8 @@ const handler = async function(payload, res) {
       aoc,
       rouge,
       blanc,
-      rosé
+      rosé,
+      orange
     );
 
     util.sendDelayedResponse(message, payload.response_url);
