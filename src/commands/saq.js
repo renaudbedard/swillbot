@@ -622,7 +622,7 @@ const handler = async function(payload, res) {
     if (text.trim().length > 0) wineQueries = util.getQueries(text);
 
     const wineInfoPromises = wineQueries.map(x =>
-      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé)
+      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé, orange)
     );
 
     const wineInfos = await Promise.all(
