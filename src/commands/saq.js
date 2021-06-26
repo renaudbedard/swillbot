@@ -20,7 +20,7 @@ function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc) {
+function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -39,13 +39,13 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
     if (loterie) args.parameters.availability = `In a lottery${soon ? " shortly" : ""}`;
     else if (soon) args.parameters.availability = "Coming soon";
     if (cépages.length > 0)
-      args.parameters.cepage = cépages.map(x => capitalizeFirstLetter(x));
-    if (aoc.length > 0)
-      args.parameters.appellation = aoc.map(x => capitalizeFirstLetter(x));      
-    if (blanc)
-      args.parameters.cat = 212;
-    else if (rouge)
-      args.parameters.cat = 215;
+      args.parameters.cepage = cépages.map(x => {
+        return capitalizeFirstLetter(x);
+      });
+    if (aoc.length > 0) args.parameters.appellation = aoc.map(x => capitalizeFirstLetter(x));
+    if (blanc) args.parameters.cat = 212;
+    else if (rouge) args.parameters.cat = 215;
+    else if (rosé) args.parameters.cat = 218;
 
     args.parameters.product_list_limit = 96;
 
@@ -309,7 +309,24 @@ function scrapeWineScore(wineInfo) {
   });
 }
 
-function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, nature, web, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc) {
+function formatWineInfoSlackMessage(
+  source,
+  query,
+  wineInfos,
+  multiResult,
+  nature,
+  web,
+  nouveautés,
+  minPrice,
+  maxPrice,
+  loterie,
+  soon,
+  cépages,
+  aoc,
+  rouge,
+  blanc,
+  rosé
+) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -407,6 +424,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, multiResult, natur
   if (maxPrice) query = `${query} <${maxPrice}$`;
   if (rouge) query = `${query} +rouge`;
   if (blanc) query = `${query} +blanc`;
+  if (rosé) query = `${query} +rosé`;
   if (cépages.length > 0) query = `${query} +cépages (${cépages.join(",")})`;
   if (aoc.length > 0) query = `${query} +aoc (${aoc.join(",")})`;
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/saq ${query}\``;
@@ -465,7 +483,7 @@ const handler = async function(payload, res) {
                 value: "Pour plusieurs appellations, utiliser des parenthèses et séparer par des virgules."
               },
               {
-                title: "Vins rouges ou blancs uniquement : `+rouge`, `+blanc`"
+                title: "Vins rouges ou blancs uniquement : `+rouge`, `+blanc`, `+rosé`"
               }
             ]
           },
@@ -501,6 +519,7 @@ const handler = async function(payload, res) {
     let aoc = [];
     let rouge = false;
     let blanc = false;
+    let rosé = false;
 
     if (text.startsWith("~")) {
       console.log("Multi-result query!");
@@ -579,6 +598,10 @@ const handler = async function(payload, res) {
       console.log("Blanc!");
       blanc = true;
       text = text.replace("+blanc", "").trim();
+    } else if (text.includes("+rosé")) {
+      console.log("Rosé!");
+      rosé = true;
+      text = text.replace("+rosé", "").trim();
     }
     if (text.includes("+new")) {
       console.log("New!");
@@ -591,7 +614,7 @@ const handler = async function(payload, res) {
     if (text.trim().length > 0) wineQueries = util.getQueries(text);
 
     const wineInfoPromises = wineQueries.map(x =>
-      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc)
+      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé)
     );
 
     const wineInfos = await Promise.all(
@@ -621,7 +644,8 @@ const handler = async function(payload, res) {
       cépages,
       aoc,
       rouge,
-      blanc
+      blanc,
+      rosé
     );
 
     util.sendDelayedResponse(message, payload.response_url);
