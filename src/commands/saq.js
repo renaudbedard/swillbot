@@ -608,7 +608,7 @@ const handler = async function(payload, res) {
       text = text.replace("+rosé", "").trim();
     } else if (text.includes("+orange")) {
       console.log("Arrange!");
-      rosé = true;
+      orange = true;
       text = text.replace("+orange", "").trim();
     }
     if (text.includes("+new")) {
