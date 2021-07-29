@@ -20,7 +20,24 @@ function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé, orange) {
+function scrapeWineInfo(
+  query,
+  multiResult,
+  natureOnly,
+  webOnly,
+  nouveautés,
+  minPrice,
+  maxPrice,
+  loterie,
+  soon,
+  cépages,
+  aoc,
+  vin,
+  rouge,
+  blanc,
+  rosé,
+  orange
+) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
     let args = {
@@ -43,6 +60,7 @@ function scrapeWineInfo(query, multiResult, natureOnly, webOnly, nouveautés, mi
         return capitalizeFirstLetter(x);
       });
     if (aoc.length > 0) args.parameters.appellation = aoc.map(x => capitalizeFirstLetter(x));
+    if (vin) args.parameters.cat = 44;
     if (blanc) args.parameters.cat = 212;
     else if (rouge) args.parameters.cat = 215;
     else if (rosé) args.parameters.cat = 218;
@@ -324,6 +342,7 @@ function formatWineInfoSlackMessage(
   soon,
   cépages,
   aoc,
+  vin,
   rouge,
   blanc,
   rosé,
@@ -424,6 +443,7 @@ function formatWineInfoSlackMessage(
   if (loterie) query = `${query} +loterie`;
   if (minPrice) query = `${query} >${minPrice}$`;
   if (maxPrice) query = `${query} <${maxPrice}$`;
+  if (vin) query = `${query} +vin`;
   if (rouge) query = `${query} +rouge`;
   if (blanc) query = `${query} +blanc`;
   if (rosé) query = `${query} +rosé`;
@@ -486,7 +506,7 @@ const handler = async function(payload, res) {
                 value: "Pour plusieurs appellations, utiliser des parenthèses et séparer par des virgules."
               },
               {
-                title: "Vins rouges ou blancs uniquement : `+rouge`, `+blanc`, `+rosé`, `+orange"
+                title: "Vins : tous vins, rouges ou blancs uniquement : `+vin`, `+rouge`, `+blanc`, `+rosé`, `+orange"
               }
             ]
           },
@@ -520,6 +540,7 @@ const handler = async function(payload, res) {
     let soon = false;
     let cépages = [];
     let aoc = [];
+    let vin = false;
     let rouge = false;
     let blanc = false;
     let rosé = false;
@@ -594,6 +615,11 @@ const handler = async function(payload, res) {
       aoc = [aocMatches[1].trim()];
       text = text.replace(aocRegex, "");
     }
+    if (text.includes("+vin")) {
+      console.log("Vin!");
+      vin = true;
+      text = text.replace("+vin", "").trim();
+    }
     if (text.includes("+rouge")) {
       console.log("Rouge!");
       rouge = true;
@@ -622,7 +648,24 @@ const handler = async function(payload, res) {
     if (text.trim().length > 0) wineQueries = util.getQueries(text);
 
     const wineInfoPromises = wineQueries.map(x =>
-      scrapeWineInfo(x.trim(), multiResult, natureOnly, webOnly, nouveautés, minPrice, maxPrice, loterie, soon, cépages, aoc, rouge, blanc, rosé, orange)
+      scrapeWineInfo(
+        x.trim(),
+        multiResult,
+        natureOnly,
+        webOnly,
+        nouveautés,
+        minPrice,
+        maxPrice,
+        loterie,
+        soon,
+        cépages,
+        aoc,
+        vin,
+        rouge,
+        blanc,
+        rosé,
+        orange
+      )
     );
 
     const wineInfos = await Promise.all(
@@ -651,6 +694,7 @@ const handler = async function(payload, res) {
       soon,
       cépages,
       aoc,
+      vin,
       rouge,
       blanc,
       rosé,
