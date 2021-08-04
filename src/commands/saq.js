@@ -485,6 +485,9 @@ const handler = async function(payload, res) {
                 title: "Produits disponibles en ligne : `+web`"
               },
               {
+                title: "Produits nouvellement disponibles : `+new`"
+              },
+              {
                 title: "Produits disponibles bientôt : `+soon`"
               },
               {
@@ -506,16 +509,7 @@ const handler = async function(payload, res) {
                 value: "Pour plusieurs appellations, utiliser des parenthèses et séparer par des virgules."
               },
               {
-                title: "Vins : tous vins, rouges ou blancs uniquement : `+vin`, `+rouge`, `+blanc`, `+rosé`, `+orange"
-              }
-            ]
-          },
-          {
-            title: ":star2: Recherches spéciales",
-            fields: [
-              {
-                title: "Produits nouvellement disponibles : `/saq +new`",
-                value: "Implique un `~` et peut être appelé sans terme de recherche. Peut être combiné avec des modificateurs."
+                title: "Vins : tous vins, rouges ou blancs uniquement : `+vin`, `+rouge`, `+blanc`, `+rosé`, `+orange`"
               }
             ]
           }
