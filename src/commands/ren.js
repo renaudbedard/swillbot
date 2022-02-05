@@ -7,6 +7,7 @@
 const util = require("../util");
 const modelId = "ada:ft-personal-2022-02-05-20-24-59";
 const { Configuration, OpenAIApi } = require("openai");
+const nodeUtil = require("util");
 
 async function getFakeReviewAttachment(beerInfo) {
   let attachment = {
@@ -31,7 +32,7 @@ async function getFakeReviewAttachment(beerInfo) {
     stop: [" END"]
   });
 
-  console.log(JSON.stringify(response));
+  console.log(nodeUtil.inspect(response));
 
   let generatedText = response.choices[0].text;
   let textParts = generatedText.split(" ### ");
