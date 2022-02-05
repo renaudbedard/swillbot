@@ -32,9 +32,16 @@ async function getFakeReviewAttachment(beerInfo) {
     stop: [" END"]
   });
 
-  console.log(nodeUtil.inspect(response));
+  if (response.status != 200) {
+    throw {
+      source: `Generating REN review`,
+      message: `Error ${response.status}!\n${nodeUtil.inspect(response.data)}`
+    };
+  }
 
-  let generatedText = response.choices[0].text;
+  const responseData = response.data;
+
+  let generatedText = responseData.choices[0].text;
   let textParts = generatedText.split(" ### ");
 
   let rating = parseFloat(textParts[0]);
