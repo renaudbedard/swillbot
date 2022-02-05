@@ -31,6 +31,8 @@ async function getFakeReviewAttachment(beerInfo) {
     stop: [" END"]
   });
 
+  print(response);
+
   let generatedText = response.choices[0].text;
   let textParts = generatedText.split(" ### ");
 
