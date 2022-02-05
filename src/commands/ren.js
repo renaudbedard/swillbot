@@ -41,11 +41,11 @@ async function getFakeReviewAttachment(beerInfo) {
 
   const responseData = response.data;
 
-  console.log(nodeUtil.inspect(responseData));
+  // console.log(nodeUtil.inspect(responseData));
 
   let generatedText = responseData.choices[0].text;
 
-  console.log(`generatedText : ${generatedText}`);
+  // console.log(`generatedText : ${generatedText}`);
 
   let textParts = generatedText.split(" ### ");
 

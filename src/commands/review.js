@@ -392,7 +392,7 @@ function getCheckinComment(checkinId) {
  * @param {object} beerInfo Untappd beer info
  * @return {object} The rich slack message
  */
-function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzyGather) {
+async function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzyGather) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -445,7 +445,7 @@ function formatReviewSlackMessage(source, query, users, reviews, beerInfo, fuzzy
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "renaudbedard") {
-        let fakeReview = ren.getFakeReviewAttachment(beerInfo);
+        let fakeReview = await ren.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "AleAleAleB") {
@@ -564,7 +564,7 @@ const handler = async function(payload, res) {
     //console.log(untappdUsers);
     //console.log(reviews);
 
-    const slackMessage = formatReviewSlackMessage(payload.user_id, payload.text, untappdUsers, reviews, beerInfo, fuzzyGather);
+    const slackMessage = await formatReviewSlackMessage(payload.user_id, payload.text, untappdUsers, reviews, beerInfo, fuzzyGather);
 
     util.sendDelayedResponse(slackMessage, payload.response_url);
   } catch (err) {
