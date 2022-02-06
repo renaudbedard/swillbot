@@ -31,7 +31,7 @@ async function getFakeReviewAttachment(beerInfo) {
     prompt: `${shortStyle} ->`,
     max_tokens: 96,
     stop: [" END"],
-    temperature: 0.8
+    temperature: 0.9
   });
 
   if (response.status != 200) {
