@@ -5,7 +5,8 @@
 "use strict";
 
 const util = require("../util");
-const modelId = "ada:ft-personal-2022-02-05-20-24-59";
+//const modelId = "ada:ft-personal-2022-02-05-20-24-59";
+const modelId = "curie:ft-personal-2022-02-06-00-56-29";
 const { Configuration, OpenAIApi } = require("openai");
 const nodeUtil = require("util");
 
@@ -28,7 +29,7 @@ async function getFakeReviewAttachment(beerInfo) {
   const response = await openai.createCompletionFromModel({
     model: modelId,
     prompt: `${shortStyle} ->`,
-    max_tokens: 1024,
+    max_tokens: 64,
     stop: [" END"]
   });
 
@@ -41,11 +42,7 @@ async function getFakeReviewAttachment(beerInfo) {
 
   const responseData = response.data;
 
-  // console.log(nodeUtil.inspect(responseData));
-
   let generatedText = responseData.choices[0].text;
-
-  // console.log(`generatedText : ${generatedText}`);
 
   let textParts = generatedText.split(" ### ");
 
