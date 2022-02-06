@@ -46,8 +46,10 @@ async function getFakeReviewAttachment(beerInfo) {
   let generatedText = responseData.choices[0].text;
 
   let textParts = generatedText.split(" ### ");
-
-  let rating = parseFloat(textParts[0]);
+  let rating = 4.0;
+  if (parseFloat(textParts[0]) != NaN) {
+    rating = parseFloat(textParts[0]);
+  }
   const ratingString = util.getRatingString(rating);
 
   attachment.text += `${ratingString}`;
