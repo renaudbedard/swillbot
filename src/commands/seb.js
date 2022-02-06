@@ -6,7 +6,7 @@
 
 const util = require("../util");
 
-const modelId = "curie:ft-personal-2022-02-06-04-22-07";
+const modelId = "curie:ft-personal-2022-02-06-05-07-59";
 const { Configuration, OpenAIApi } = require("openai");
 const nodeUtil = require("util");
 
