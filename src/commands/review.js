@@ -433,7 +433,7 @@ async function formatReviewSlackMessage(source, query, users, reviews, beerInfo,
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "Sebastouflant") {
-        let fakeReview = seb.getFakeReviewAttachment(beerInfo);
+        let fakeReview = await seb.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "matatatow") {
