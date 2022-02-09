@@ -433,7 +433,7 @@ async function formatReviewSlackMessage(source, query, users, reviews, beerInfo,
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "Sebastouflant") {
-        let fakeReview = await seb.getFakeReviewAttachment(beerInfo);
+        let fakeReview = await seb.getFakeReviewAttachment(beerInfo, source);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "matatatow") {
@@ -441,11 +441,11 @@ async function formatReviewSlackMessage(source, query, users, reviews, beerInfo,
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "vin100limite") {
-        let fakeReview = await vin.getFakeReviewAttachment(beerInfo);
+        let fakeReview = await vin.getFakeReviewAttachment(beerInfo, source);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "renaudbedard") {
-        let fakeReview = await ren.getFakeReviewAttachment(beerInfo);
+        let fakeReview = await ren.getFakeReviewAttachment(beerInfo, source);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
       } else if (users[i].name == "AleAleAleB") {

@@ -10,7 +10,7 @@ const modelId = "curie:ft-personal-2022-02-06-17-42-06";
 const { Configuration, OpenAIApi } = require("openai");
 const nodeUtil = require("util");
 
-async function getFakeReviewAttachment(beerInfo) {
+async function getFakeReviewAttachment(beerInfo, userId) {
   let attachment = {
     color: "#ffcc00",
     thumb_url: "https://ca.slack-edge.com/TBLMUG0RE-UFJ0ZEK43-067d4aa674e4-512",
@@ -31,7 +31,8 @@ async function getFakeReviewAttachment(beerInfo) {
     prompt: `${shortStyle} ->`,
     max_tokens: 96,
     stop: [" END"],
-    temperature: 0.9
+    temperature: 0.9,
+    user: userId
   });
 
   if (response.status != 200) {
