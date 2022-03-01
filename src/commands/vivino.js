@@ -57,7 +57,7 @@ function scrapeWineInfo(query) {
         } catch (err) {
           reject({
             source: context,
-            message: `Couldn't find matching wine! (err : ${err})`,
+            message: `${err}`,
             exactQuery: query
           });
         }
@@ -65,7 +65,7 @@ function scrapeWineInfo(query) {
       .catch(function(err) {
         reject({
           source: context,
-          message: `Error while querying vivino! (err : ${err})`,
+          message: `${err}`,
           exactQuery: query
         });
       });
@@ -136,7 +136,7 @@ function scrapeWineDetails(wineInfo) {
         } catch (err) {
           reject({
             source: context,
-            message: `Couldn't find matching wine! (err : ${err})`,
+            message: `${err}`,
             exactQuery: query
           });
         }
@@ -144,7 +144,7 @@ function scrapeWineDetails(wineInfo) {
       .catch(function(err) {
         reject({
           source: context,
-          message: `Error while querying vivino! (err : ${err})`,
+          message: `${err}`,
           exactQuery: query
         });
       });
@@ -169,7 +169,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     if (wineInfo.inError) {
       let attachment = {
         color: "#ff0000",
-        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\``
+        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\` (${wineInfo.errorMessage})`
       };
       slackMessage.attachments.push(attachment);
     }
@@ -205,7 +205,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     slackMessage.attachments.push(attachment);
   }
 
-  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/vivino ${query}\``;
+  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>:\n\`\`\`/vivino ${query}\`\`\``;
 
   return slackMessage;
 }
@@ -223,7 +223,7 @@ const handler = async function(payload, res) {
       wineInfoPromises.map(p =>
         p.catch(err => {
           // ignore errors
-          return { inError: true, query: err.exactQuery };
+          return { inError: true, query: err.exactQuery, errorMessage: err.message };
         })
       )
     );
