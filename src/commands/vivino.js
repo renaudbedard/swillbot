@@ -8,6 +8,7 @@ const util = require("../util");
 const restClient = require("../rest-client");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const pLimit = require("p-limit");
 
 function scrapeWineInfo(query) {
   const context = `Search for wine '${query}'`;
@@ -197,10 +198,14 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
+    const limit = pLimit(3);
+
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
     const wineQueries = util.getQueries(text);
-    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim()));
+    const wineInfoPromises = wineQueries.map(x => {
+      return limit(() => scrapeWineInfo(x.trim()));
+    });
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
@@ -211,7 +216,11 @@ const handler = async function(payload, res) {
       )
     );
 
-    const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
+    const wineDetailPromises = wineInfos.map(x => {
+      return limit(() => (x.inError ? x : scrapeWineDetails(x)));
+    });
+
+    const wineDetails = await Promise.all(wineDetailPromises).catch(util.onErrorRethrow);
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
 
