@@ -24,7 +24,7 @@ function scrapeWineInfo(query) {
         if (Buffer.isBuffer(data)) {
           data = data.toString("utf8");
         }
-        console.log(data);
+        //console.log(data);
 
         const dom = new JSDOM(data);
 
@@ -84,7 +84,7 @@ function scrapeWineDetails(wineInfo) {
         if (Buffer.isBuffer(data)) {
           data = data.toString("utf8");
         }
-        console.log(data);
+        //console.log(data);
 
         try {
           // this is very unsafe but oh well
