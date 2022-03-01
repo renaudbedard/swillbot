@@ -75,66 +75,79 @@ function scrapeWineInfo(query) {
 function scrapeWineDetails(wineInfo) {
   const context = `Fetching wine details for '${wineInfo.name}'`;
   return new Promise((resolve, reject) => {
-    let args = {
-      parameters: {}
-    };
-
-    let req = restClient.get(wineInfo.link, args, function(data, _) {
-      if (Buffer.isBuffer(data)) {
-        data = data.toString("utf8");
-      }
-
-      // this is very unsafe but oh well
-      const dom = new JSDOM(data, { runScripts: "dangerously" });
-      //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
-
-      var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
-
-      if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
-        const wineMetadata = pageInfo.vintage.wine;
-
-        if (wineMetadata.grapes) {
-          wineInfo.grapes = wineMetadata.grapes.map(x => x.name).join(", ");
+    axios
+      .get(wineInfo.link, {
+        httpAgent: agent
+      })
+      .then(function(response) {
+        var data = response.data;
+        if (Buffer.isBuffer(data)) {
+          data = data.toString("utf8");
         }
+        console.log(data);
 
-        if (wineMetadata.type_id) {
-          switch (wineMetadata.type_id) {
-            case 1:
-              wineInfo.type = "Red wine";
-              break;
-            case 2:
-              wineInfo.type = "White wine";
-              wineInfo.emojiPrefix = "white";
-              break;
-            case 3:
-              wineInfo.type = "Sparkling wine";
-              break;
-            case 4:
-              wineInfo.type = "Rosé wine";
-              wineInfo.emojiPrefix = "rosé";
-              break;
-            case 24:
-              wineInfo.type = "Fortified wine";
-              break;
-            case 7:
-              wineInfo.type = "Dessert wine";
-              break;
+        try {
+          // this is very unsafe but oh well
+          const dom = new JSDOM(data, { runScripts: "dangerously" });
+          //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
+
+          var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
+
+          if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
+            const wineMetadata = pageInfo.vintage.wine;
+
+            if (wineMetadata.grapes) {
+              wineInfo.grapes = wineMetadata.grapes.map(x => x.name).join(", ");
+            }
+
+            if (wineMetadata.type_id) {
+              switch (wineMetadata.type_id) {
+                case 1:
+                  wineInfo.type = "Red wine";
+                  break;
+                case 2:
+                  wineInfo.type = "White wine";
+                  wineInfo.emojiPrefix = "white";
+                  break;
+                case 3:
+                  wineInfo.type = "Sparkling wine";
+                  break;
+                case 4:
+                  wineInfo.type = "Rosé wine";
+                  wineInfo.emojiPrefix = "rosé";
+                  break;
+                case 24:
+                  wineInfo.type = "Fortified wine";
+                  break;
+                case 7:
+                  wineInfo.type = "Dessert wine";
+                  break;
+              }
+            }
+
+            if (wineInfo.rating_count == 0 && wineMetadata.statistics) {
+              wineInfo.rating_score = wineMetadata.statistics.ratings_average;
+              wineInfo.rating_count = wineMetadata.statistics.ratings_count;
+              wineInfo.ratings_all_vintages = true;
+            }
           }
+
+          resolve(wineInfo);
+        } catch (err) {
+          reject({
+            source: context,
+            message: `Couldn't find matching wine! (err : ${err})`,
+            exactQuery: query
+          });
         }
-
-        if (wineInfo.rating_count == 0 && wineMetadata.statistics) {
-          wineInfo.rating_score = wineMetadata.statistics.ratings_average;
-          wineInfo.rating_count = wineMetadata.statistics.ratings_count;
-          wineInfo.ratings_all_vintages = true;
-        }
-      }
-
-      resolve(wineInfo);
-    });
-
-    req.on("error", function(err) {
-      reject({ source: context, message: err.toString() });
-    });
+      })
+      .catch(function(err) {
+        reject({
+          source: context,
+          message: `Error while querying vivino! (err : ${err})`,
+          exactQuery: query
+        });
+      });
   });
 }
 
