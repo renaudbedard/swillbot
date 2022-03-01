@@ -9,7 +9,9 @@ const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const axios = require("axios").default;
 const http = require("http");
-const agent = new http.Agent({ maxSockets: 5, keepAlive: true });
+const https = require("https");
+const agent = new http.Agent({ maxSockets: 1, keepAlive: true });
+const secureAgent = new https.Agent({ maxSockets: 1, keepAlive: true });
 
 function scrapeWineInfo(query) {
   const context = `Search for wine '${query}'`;
@@ -17,7 +19,8 @@ function scrapeWineInfo(query) {
     axios
       .get("https://www.vivino.com/search/wines", {
         params: { q: query },
-        httpAgent: agent
+        httpAgent: agent,
+        httpsAgent: secureAgent
       })
       .then(function(response) {
         var data = response.data;
@@ -77,7 +80,8 @@ function scrapeWineDetails(wineInfo) {
   return new Promise((resolve, reject) => {
     axios
       .get(wineInfo.link, {
-        httpAgent: agent
+        httpAgent: agent,
+        httpsAgent: secureAgent
       })
       .then(function(response) {
         var data = response.data;
