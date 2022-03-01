@@ -68,7 +68,7 @@ function scrapeWineInfo(query) {
       .catch(function(err) {
         reject({
           source: context,
-          message: `${err}`,
+          message: `${err.toJSON()}`,
           exactQuery: query
         });
       });
@@ -148,7 +148,7 @@ function scrapeWineDetails(wineInfo) {
       .catch(function(err) {
         reject({
           source: context,
-          message: `${err}`,
+          message: `${err.toJSON()}`,
           exactQuery: query
         });
       });
@@ -173,7 +173,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     if (wineInfo.inError) {
       let attachment = {
         color: "#ff0000",
-        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\` (${wineInfo.errorMessage})`
+        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\`\n\`\`\`(${wineInfo.errorMessage})\`\`\``
       };
       slackMessage.attachments.push(attachment);
     }
@@ -209,7 +209,10 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
     slackMessage.attachments.push(attachment);
   }
 
-  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>:\n\`\`\`/vivino ${query}\`\`\``;
+  const shortQuery = query;
+  if (query.length > 1900) shortQuery = query.substring(0, 1900) + " [...]";
+
+  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>:\n\`\`\`/vivino ${shortQuery}\`\`\``;
 
   return slackMessage;
 }
