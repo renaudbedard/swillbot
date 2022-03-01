@@ -12,6 +12,7 @@ const http = require("http");
 const https = require("https");
 const agent = new http.Agent({ maxSockets: 1, keepAlive: true });
 const secureAgent = new https.Agent({ maxSockets: 1, keepAlive: true });
+const nodeUtil = require("util");
 
 function scrapeWineInfo(query) {
   const context = `Search for wine '${query}'`;
@@ -68,7 +69,7 @@ function scrapeWineInfo(query) {
       .catch(function(err) {
         reject({
           source: context,
-          message: `${err.toJSON()}`,
+          message: nodeUtil.inspect(err.toJSON()),
           exactQuery: query
         });
       });
@@ -148,7 +149,7 @@ function scrapeWineDetails(wineInfo) {
       .catch(function(err) {
         reject({
           source: context,
-          message: `${err.toJSON()}`,
+          message: nodeUtil.inspect(err.toJSON()),
           exactQuery: query
         });
       });
