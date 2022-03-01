@@ -5,67 +5,70 @@
 "use strict";
 
 const util = require("../util");
-const restClient = require("../rest-client");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
-const pLimit = require("p-limit");
+const axios = require("axios").default;
+const http = require("http");
+const agent = new http.Agent({ maxSockets: 5, keepAlive: true });
 
 function scrapeWineInfo(query) {
   const context = `Search for wine '${query}'`;
   return new Promise((resolve, reject) => {
-    let args = {
-      parameters: {
-        q: query
-      }
-    };
+    axios
+      .get("https://www.vivino.com/search/wines", {
+        params: { q: query },
+        httpAgent: agent
+      })
+      .then(function(response) {
+        var data = response.data;
+        if (Buffer.isBuffer(data)) {
+          data = data.toString("utf8");
+        }
+        console.log(data);
 
-    let req = restClient.get("https://www.vivino.com/search/wines", args, function(data, _) {
-      if (Buffer.isBuffer(data)) {
-        data = data.toString("utf8");
-      }
-      //console.log(data);
+        const dom = new JSDOM(data);
 
-      const dom = new JSDOM(data);
+        try {
+          var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+          var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
+          var imageLink = cardDiv
+            .querySelector("figure.wine-card__image")
+            .getAttribute("style")
+            .match(/url\(\/\/(.+)\)/)[1];
+          imageLink = `http://${imageLink}`;
+          var wineName = cardDiv.querySelector(".wine-card__name span").textContent.trim();
+          var region = cardDiv.querySelector(".wine-card__region a").textContent;
+          var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
+          var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
+          var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
+          var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
 
-      try {
-        var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
-        var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
-        var imageLink = cardDiv
-          .querySelector("figure.wine-card__image")
-          .getAttribute("style")
-          .match(/url\(\/\/(.+)\)/)[1];
-        imageLink = `http://${imageLink}`;
-        var wineName = cardDiv.querySelector(".wine-card__name span").textContent.trim();
-        var region = cardDiv.querySelector(".wine-card__region a").textContent;
-        var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
-        var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
-        var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
-        var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
-
-        resolve({
-          query: query,
-          name: wineName,
-          link: winePageLink,
-          rating_score: averageRating,
-          rating_count: ratingCount,
-          label_url: imageLink,
-          region: region,
-          country: country,
-          emojiPrefix: null
-        });
-      } catch (err) {
+          resolve({
+            query: query,
+            name: wineName,
+            link: winePageLink,
+            rating_score: averageRating,
+            rating_count: ratingCount,
+            label_url: imageLink,
+            region: region,
+            country: country,
+            emojiPrefix: null
+          });
+        } catch (err) {
+          reject({
+            source: context,
+            message: `Couldn't find matching wine! (err : ${err})`,
+            exactQuery: query
+          });
+        }
+      })
+      .catch(function(err) {
         reject({
           source: context,
-          message: `Couldn't find matching wine! (err : ${err})`,
+          message: `Error while querying vivino! (err : ${err})`,
           exactQuery: query
         });
-        return;
-      }
-    });
-
-    req.on("error", function(err) {
-      reject({ source: context, message: err.toString(), exactQuery: query });
-    });
+      });
   });
 }
 
@@ -198,14 +201,10 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    const limit = pLimit(3);
-
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
     const wineQueries = util.getQueries(text);
-    const wineInfoPromises = wineQueries.map(x => {
-      return limit(() => scrapeWineInfo(x.trim()));
-    });
+    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim()));
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
@@ -216,11 +215,7 @@ const handler = async function(payload, res) {
       )
     );
 
-    const wineDetailPromises = wineInfos.map(x => {
-      return limit(() => (x.inError ? x : scrapeWineDetails(x)));
-    });
-
-    const wineDetails = await Promise.all(wineDetailPromises).catch(util.onErrorRethrow);
+    const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
 
