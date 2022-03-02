@@ -12,8 +12,8 @@ const http = require("http");
 const https = require("https");
 const moment = require("moment");
 
-const agent = new http.Agent({ keepAlive: true, maxSockets: 10 });
-const secureAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
+const agent = new http.Agent({ keepAlive: true });
+const secureAgent = new https.Agent({ keepAlive: true });
 
 const waitFor = 30;
 const requestsPerBatch = 50;
@@ -52,7 +52,6 @@ function scrapeWineInfoPromise(query) {
 
 function scrapeWineInfo(query, resolve, reject) {
   const retry = () => {
-    console.log(`Retrying info for ${query}...`);
     scrapeWineInfo(query, resolve, reject);
   };
 
@@ -79,6 +78,8 @@ function scrapeWineInfo(query, resolve, reject) {
   }
 
   requestsLeft--;
+
+  console.log(`Sending info for ${query}... (${requestsLeft} requests left in pool)`);
 
   const context = `Search for wine '${query}'`;
   axios
