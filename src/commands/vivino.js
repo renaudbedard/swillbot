@@ -12,11 +12,11 @@ const http = require("http");
 const https = require("https");
 const moment = require("moment");
 
-const agent = new http.Agent({ keepAlive: false });
-const secureAgent = new https.Agent({ keepAlive: false });
+const agent = new http.Agent({ keepAlive: true });
+const secureAgent = new https.Agent({ keepAlive: true });
 
-const waitFor = 5;
-const requestsPerBatch = 10;
+const waitFor = 120;
+const requestsPerBatch = 50;
 
 var requestsLeft = requestsPerBatch;
 var refillPending = false;
