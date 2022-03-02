@@ -15,7 +15,7 @@ const moment = require("moment");
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
-const waitFor = 15;
+const waitFor = 30;
 const requestsPerBatch = 50;
 var requestsLeft = requestsPerBatch;
 
