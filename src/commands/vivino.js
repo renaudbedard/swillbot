@@ -94,7 +94,7 @@ function scrapeWineInfo(query, resolve, reject) {
   axios
     .get("https://www.vivino.com/search/wines", {
       params: { q: query },
-      headers: { "user-agent": userAgents[Math.min(batchIndex, userAgents.length - 1)] },
+      headers: { "user-agent": userAgents[batchIndex % userAgents.length] },
       httpAgent: agent,
       httpsAgent: secureAgent
     })
