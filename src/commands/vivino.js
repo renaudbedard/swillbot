@@ -10,8 +10,11 @@ const { JSDOM } = jsdom;
 const axios = require("axios").default;
 const http = require("http");
 const https = require("https");
-const agent = new http.Agent({ maxSockets: 1, keepAlive: true });
-const secureAgent = new https.Agent({ maxSockets: 1, keepAlive: true });
+const moment = require("moment");
+
+const agent = new http.Agent({ keepAlive: true });
+const secureAgent = new https.Agent({ keepAlive: true });
+const sleepEnd = null;
 
 function sleep(ms) {
   return new Promise(resolve => {
@@ -21,8 +24,10 @@ function sleep(ms) {
 
 function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
-    console.log(`Sleeping 15 seconds after a 429 on ${query}`);
-    sleep(15000).then(() => {
+    console.log(`Sleeping 10 seconds after a 429 on ${query}`);
+    sleepEnd = moment().add(10, "seconds");
+    sleep(10000).then(() => {
+      sleepEnd = null;
       console.log(`Retrying ${query}...`);
       retry();
     });
@@ -42,6 +47,13 @@ function scrapeWineInfoPromise(query) {
 }
 
 function scrapeWineInfo(query, resolve, reject) {
+  if (sleepEnd) {
+    const msToWait = sleepEnd.diff(moment(), "milliseconds");
+    console.log(`Sleeping ${msToWait / 1000} second on info for ${query} (we are otherwise sleeping)`);
+    sleep(msToWait).then(() => scrapeWineInfo(query, resolve, reject));
+    return;
+  }
+
   const context = `Search for wine '${query}'`;
   axios
     .get("https://www.vivino.com/search/wines", {
@@ -106,6 +118,13 @@ function scrapeWineDetailsPromise(wineInfo) {
 }
 
 function scrapeWineDetails(wineInfo, resolve, reject) {
+  if (sleepEnd) {
+    const msToWait = sleepEnd.diff(moment(), "milliseconds");
+    console.log(`Sleeping ${msToWait / 1000} second on details for ${query} (we are otherwise sleeping)`);
+    sleep(msToWait).then(() => scrapeWineDetails(wineInfo, resolve, reject));
+    return;
+  }
+
   const context = `Fetching wine details for '${wineInfo.name}'`;
   axios
     .get(wineInfo.link, {
@@ -261,7 +280,7 @@ const handler = async function(payload, res) {
       )
     );
 
-    const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetails(x)))).catch(util.onErrorRethrow);
+    const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetailsPromise(x)))).catch(util.onErrorRethrow);
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
 
