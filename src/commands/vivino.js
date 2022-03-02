@@ -13,7 +13,7 @@ const https = require("https");
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
-function handleHttpError(err, reject) {
+function handleHttpError(err, context, query, reject) {
   if (err.status == 429 && err.response) {
     const retryAfter = err.response.headers["retry-after"];
     if (retryAfter) {
@@ -91,7 +91,7 @@ function scrapeWineInfo(query) {
         }
       })
       .catch(function(err) {
-        handleHttpError(err, reject);
+        handleHttpError(err, context, query, reject);
       });
   });
 }
@@ -167,7 +167,7 @@ function scrapeWineDetails(wineInfo) {
         }
       })
       .catch(function(err) {
-        handleHttpError(err, reject);
+        handleHttpError(err, context, query, reject);
       });
   });
 }
