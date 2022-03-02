@@ -10,8 +10,8 @@ const { JSDOM } = jsdom;
 const axios = require("axios").default;
 const http = require("http");
 const https = require("https");
-const agent = new http.Agent({ keepAlive: true });
-const secureAgent = new https.Agent({ keepAlive: true });
+const agent = new http.Agent({ maxSockets: 1, keepAlive: true });
+const secureAgent = new https.Agent({ maxSockets: 1, keepAlive: true });
 
 function sleep(ms) {
   return new Promise(resolve => {
@@ -21,8 +21,8 @@ function sleep(ms) {
 
 function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
-    console.log(`Sleeping 5 seconds after a 429 on ${query}`);
-    sleep(5000).then(() => {
+    console.log(`Sleeping 15 seconds after a 429 on ${query}`);
+    sleep(15000).then(() => {
       console.log(`Retrying ${query}...`);
       retry();
     });
