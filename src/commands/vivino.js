@@ -15,9 +15,11 @@ const moment = require("moment");
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
-const waitFor = 10;
+const waitFor = 15;
+const requestsPerBatch = 50;
+var requestsLeft = requestsPerBatch;
 
-var sleepEnd = null;
+var sleepEnd = moment();
 
 function sleep(ms) {
   return new Promise(resolve => {
@@ -51,14 +53,18 @@ function scrapeWineInfo(query, resolve, reject) {
     scrapeWineInfo(query, resolve, reject);
   };
 
-  if (sleepEnd) {
-    const msToWait = sleepEnd.diff(moment(), "milliseconds");
-    if (msToWait > 0) {
-      console.log(`Sleeping ${msToWait / 1000} second on info for ${query} (we are otherwise sleeping)`);
-      sleep(msToWait).then(retry);
-      return;
-    }
+  if (requestsLeft <= 0) {
+    console.log(`Requests depleted, waiting ${waitFor} seconds...`);
+    sleepEnd = moment().add(waitFor, "seconds");
   }
+
+  const msToWait = sleepEnd.diff(moment(), "milliseconds");
+  if (msToWait > 0) {
+    sleep(msToWait).then(retry);
+    return;
+  }
+
+  requestsLeft--;
 
   const context = `Search for wine '${query}'`;
   axios
@@ -68,6 +74,10 @@ function scrapeWineInfo(query, resolve, reject) {
       httpsAgent: secureAgent
     })
     .then(function(response) {
+      if (requestsLeft <= 0 && sleepEnd.diff(moment(), "milliseconds") <= 0) {
+        requestsLeft = requestsPerBatch;
+      }
+
       var data = response.data;
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
@@ -274,6 +284,8 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
 const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
+
+    requestsLeft = requestsPerBatch;
 
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
