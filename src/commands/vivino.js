@@ -14,7 +14,8 @@ const moment = require("moment");
 
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
-const sleepEnd = null;
+
+var sleepEnd = null;
 
 function sleep(ms) {
   return new Promise(resolve => {
