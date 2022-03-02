@@ -18,6 +18,9 @@ const secureAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
 const waitFor = 30;
 const requestsPerBatch = 50;
 var requestsLeft = requestsPerBatch;
+var refillPending = false;
+var totalResults = 0;
+var resultsToGet = 0;
 
 var sleepEnd = moment();
 
@@ -49,22 +52,29 @@ function scrapeWineInfoPromise(query) {
 
 function scrapeWineInfo(query, resolve, reject) {
   const retry = () => {
-    if (requestsLeft <= 0 && sleepEnd.diff(moment(), "milliseconds") <= 0) {
-      requestsLeft = requestsPerBatch;
-    }
-
     console.log(`Retrying info for ${query}...`);
     scrapeWineInfo(query, resolve, reject);
   };
 
+  var fillRequests = false;
   if (requestsLeft <= 0) {
-    console.log(`Requests depleted, waiting ${waitFor} seconds...`);
+    if (!refillPending) console.log(`Requests depleted, waiting ${waitFor} seconds...`);
     sleepEnd = moment().add(waitFor, "seconds");
+    if (!refillPending) fillRequests = true;
+    refillPending = true;
   }
 
   const msToWait = sleepEnd.diff(moment(), "milliseconds");
   if (msToWait > 0) {
-    sleep(msToWait).then(retry);
+    sleep(msToWait).then(() => {
+      if (fillRequests) {
+        console.log("Refilled request pool.");
+        requestsLeft = requestsPerBatch;
+        fillRequests = false;
+        refillPending = false;
+      }
+      retry();
+    });
     return;
   }
 
@@ -83,6 +93,8 @@ function scrapeWineInfo(query, resolve, reject) {
         data = data.toString("utf8");
       }
       //console.log(data);
+      totalResults++;
+      console.log(`${totalResults}/${resultsToGet}`);
 
       const dom = new JSDOM(data);
 
@@ -285,11 +297,13 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
+    totalResults = 0;
     requestsLeft = requestsPerBatch;
 
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
     const wineQueries = util.getQueries(text);
+    resultsToGet = wineQueries.length;
     const wineInfoPromises = wineQueries.map(x => scrapeWineInfoPromise(x.trim()));
 
     const wineInfos = await Promise.all(
