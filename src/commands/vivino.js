@@ -8,11 +8,7 @@ const util = require("../util");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const axios = require("axios").default;
-const http = require("http");
-const https = require("https");
 
-const agent = new http.Agent({ keepAlive: true });
-const secureAgent = new https.Agent({ keepAlive: true });
 const maxRequests = 50;
 
 function scrapeWineInfoPromise(query) {
@@ -22,14 +18,10 @@ function scrapeWineInfoPromise(query) {
 }
 
 function scrapeWineInfo(query, resolve, reject) {
-  console.log(`Sending info for ${query}...`);
-
   const context = `Search for wine '${query}'`;
   axios
     .get("https://www.vivino.com/search/wines", {
-      params: { q: query },
-      httpAgent: agent,
-      httpsAgent: secureAgent
+      params: { q: query }
     })
     .then(function(response) {
       var data = response.data;
@@ -69,7 +61,7 @@ function scrapeWineInfo(query, resolve, reject) {
       } catch (err) {
         reject({
           source: context,
-          message: `${err}`,
+          message: `${err}\n${err.stack}`,
           exactQuery: query
         });
       }
@@ -77,7 +69,7 @@ function scrapeWineInfo(query, resolve, reject) {
     .catch(function(err) {
       reject({
         source: context,
-        message: err,
+        message: `${err}\n${err.stack}`,
         exactQuery: query
       });
     });
@@ -92,10 +84,7 @@ function scrapeWineDetailsPromise(wineInfo) {
 function scrapeWineDetails(wineInfo, resolve, reject) {
   const context = `Fetching wine details for '${wineInfo.name}'`;
   axios
-    .get(wineInfo.link, {
-      httpAgent: agent,
-      httpsAgent: secureAgent
-    })
+    .get(wineInfo.link)
     .then(function(response) {
       var data = response.data;
       if (Buffer.isBuffer(data)) {
@@ -153,7 +142,7 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
       } catch (err) {
         reject({
           source: context,
-          message: `${err}`,
+          message: `${err}\n${err.stack}`,
           exactQuery: query
         });
       }
@@ -161,7 +150,7 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
     .catch(function(err) {
       reject({
         source: context,
-        message: err,
+        message: `${err}\n${err.stack}`,
         exactQuery: query
       });
     });
@@ -179,6 +168,13 @@ function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
     response_type: "in_channel",
     attachments: []
   };
+
+  if (nextQueries.length > 0) {
+    slackMessage.attachments.push({
+      color: "#ff00ff",
+      text: `More than ${maxRequests} wines provided, continue with query : \n\`\`\`/v ${nextQueries.join(", ")}\`\`\``
+    });
+  }
 
   // add in-error attachments first
   for (let wineInfo of wineInfos) {
@@ -225,12 +221,6 @@ function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
   if (query.length > 1900) shortQuery = query.substring(0, 1900) + " [...]";
 
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>:\n\`\`\`/vivino ${shortQuery}\`\`\``;
-  if (nextQueries.length > 0) {
-    slackMessage.attachments.push({
-      color: "#ff00ff",
-      text: `More than ${maxRequests} wines provided, continue with query : \n\`\`\`/v ${nextQueries.join(", ")}\`\`\``
-    });
-  }
 
   return slackMessage;
 }
