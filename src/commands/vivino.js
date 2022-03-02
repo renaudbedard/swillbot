@@ -10,9 +10,33 @@ const { JSDOM } = jsdom;
 const axios = require("axios").default;
 const http = require("http");
 const https = require("https");
-const agent = new http.Agent({ maxSockets: 1, keepAlive: true });
-const secureAgent = new https.Agent({ maxSockets: 1, keepAlive: true });
-const nodeUtil = require("util");
+const agent = new http.Agent({ keepAlive: true });
+const secureAgent = new https.Agent({ keepAlive: true });
+
+function handleHttpError(err, reject) {
+  if (err.status == 429 && err.response) {
+    const retryAfter = err.response.headers["retry-after"];
+    if (retryAfter) {
+      reject({
+        source: context,
+        message: `Too Many Requests; Retry After ${retryAfter}`,
+        exactQuery: query
+      });
+    } else {
+      reject({
+        source: context,
+        message: `Too Many Requests`,
+        exactQuery: query
+      });
+    }
+    return;
+  }
+  reject({
+    source: context,
+    message: err,
+    exactQuery: query
+  });
+}
 
 function scrapeWineInfo(query) {
   const context = `Search for wine '${query}'`;
@@ -67,11 +91,7 @@ function scrapeWineInfo(query) {
         }
       })
       .catch(function(err) {
-        reject({
-          source: context,
-          message: nodeUtil.inspect(err.toJSON()),
-          exactQuery: query
-        });
+        handleHttpError(err, reject);
       });
   });
 }
@@ -147,11 +167,7 @@ function scrapeWineDetails(wineInfo) {
         }
       })
       .catch(function(err) {
-        reject({
-          source: context,
-          message: nodeUtil.inspect(err.toJSON()),
-          exactQuery: query
-        });
+        handleHttpError(err, reject);
       });
   });
 }
