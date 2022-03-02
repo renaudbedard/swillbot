@@ -14,43 +14,7 @@ const moment = require("moment");
 
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
-const waitFor = 10;
-const requestsPerBatch = 50;
-const userAgents = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:53.0) Gecko/20100101 Firefox/53.0",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.79 Safari/537.36 Edge/14.14393",
-  "Mozilla/5.0 (iPad; CPU OS 8_4_1 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12H321 Safari/600.1.4",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1"
-];
-
-var requestsLeft = requestsPerBatch;
-var refillPending = false;
-var totalResults = 0;
-var resultsToGet = 0;
-var batchIndex = 0;
-
-var sleepEnd = moment();
-
-function sleep(ms) {
-  return new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function handleHttpError(err, context, query, reject, retry) {
-  if (err.response && err.response.status == 429) {
-    console.log(`Sleeping ${waitFor} seconds after a 429 on ${query}`);
-    sleepEnd = moment().add(waitFor, "seconds");
-    sleep(waitFor * 1000).then(retry);
-    return;
-  }
-  reject({
-    source: context,
-    message: err,
-    exactQuery: query
-  });
-}
+const maxRequests = 50;
 
 function scrapeWineInfoPromise(query) {
   return new Promise((resolve, reject) => {
@@ -59,42 +23,12 @@ function scrapeWineInfoPromise(query) {
 }
 
 function scrapeWineInfo(query, resolve, reject) {
-  const retry = () => {
-    scrapeWineInfo(query, resolve, reject);
-  };
-
-  var fillRequests = false;
-  if (requestsLeft <= 0) {
-    if (!refillPending) console.log(`Requests depleted, waiting ${waitFor} seconds...`);
-    sleepEnd = moment().add(waitFor, "seconds");
-    if (!refillPending) fillRequests = true;
-    refillPending = true;
-  }
-
-  const msToWait = sleepEnd.diff(moment(), "milliseconds");
-  if (msToWait > 0) {
-    sleep(msToWait).then(() => {
-      if (fillRequests) {
-        console.log("Refilled request pool.");
-        requestsLeft = requestsPerBatch;
-        fillRequests = false;
-        refillPending = false;
-        batchIndex++;
-      }
-      retry();
-    });
-    return;
-  }
-
-  requestsLeft--;
-
   console.log(`Sending info for ${query}... (${requestsLeft} requests left in pool)`);
 
   const context = `Search for wine '${query}'`;
   axios
     .get("https://www.vivino.com/search/wines", {
       params: { q: query },
-      headers: { "user-agent": userAgents[batchIndex % userAgents.length] },
       httpAgent: agent,
       httpsAgent: secureAgent
     })
@@ -104,8 +38,6 @@ function scrapeWineInfo(query, resolve, reject) {
         data = data.toString("utf8");
       }
       //console.log(data);
-      totalResults++;
-      console.log(`${totalResults}/${resultsToGet}`);
 
       if (requestsLeft == 0) {
         sleepEnd = moment().add(waitFor, "seconds");
@@ -148,7 +80,11 @@ function scrapeWineInfo(query, resolve, reject) {
       }
     })
     .catch(function(err) {
-      handleHttpError(err, context, query, reject, retry);
+      reject({
+        source: context,
+        message: err,
+        exactQuery: query
+      });
     });
 }
 
@@ -159,20 +95,6 @@ function scrapeWineDetailsPromise(wineInfo) {
 }
 
 function scrapeWineDetails(wineInfo, resolve, reject) {
-  const retry = () => {
-    console.log(`Retrying info for ${query}...`);
-    scrapeWineDetails(wineInfo, resolve, reject);
-  };
-
-  if (sleepEnd) {
-    const msToWait = sleepEnd.diff(moment(), "milliseconds");
-    if (msToWait > 0) {
-      console.log(`Sleeping ${msToWait / 1000} second on details for ${query} (we are otherwise sleeping)`);
-      sleep(msToWait).then(retry);
-      return;
-    }
-  }
-
   const context = `Fetching wine details for '${wineInfo.name}'`;
   axios
     .get(wineInfo.link, {
@@ -242,7 +164,11 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
       }
     })
     .catch(function(err) {
-      handleHttpError(err, context, query, reject, retry);
+      reject({
+        source: context,
+        message: err,
+        exactQuery: query
+      });
     });
 }
 
@@ -252,7 +178,7 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
  * @param {object[]} wineInfos Vivino's beer info
  * @return {string} The rich slack message
  */
-function formatWineInfoSlackMessage(source, query, wineInfos) {
+function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
   // See https://api.slack.com/docs/message-formatting
   let slackMessage = {
     response_type: "in_channel",
@@ -304,6 +230,12 @@ function formatWineInfoSlackMessage(source, query, wineInfos) {
   if (query.length > 1900) shortQuery = query.substring(0, 1900) + " [...]";
 
   if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>:\n\`\`\`/vivino ${shortQuery}\`\`\``;
+  if (nextQueries.length > 0) {
+    slackMessage.attachments.push({
+      color: "#ff00ff",
+      text: `More than ${maxRequests} wines provided, continue with query : \n\`\`\`/v ${nextQueries.join(", ")}\`\`\``
+    });
+  }
 
   return slackMessage;
 }
@@ -312,14 +244,15 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    totalResults = 0;
-    batchIndex = 0;
-    requestsLeft = requestsPerBatch;
-
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
-    const wineQueries = util.getQueries(text);
-    resultsToGet = wineQueries.length;
+    let wineQueries = util.getQueries(text);
+    let nextQueries = [];
+    if (wineQueries.length > maxRequests) {
+      const cappedQueries = wineQueries.slice(0, maxRequests);
+      nextQueries = wineQueries.slice(maxRequests, wineQueries.length - maxRequests);
+      wineQueries = cappedQueries;
+    }
     const wineInfoPromises = wineQueries.map(x => scrapeWineInfoPromise(x.trim()));
 
     const wineInfos = await Promise.all(
@@ -333,7 +266,7 @@ const handler = async function(payload, res) {
 
     const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetailsPromise(x)))).catch(util.onErrorRethrow);
 
-    const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails);
+    const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails, nextQueries);
 
     util.sendDelayedResponse(message, payload.response_url);
   } catch (err) {
