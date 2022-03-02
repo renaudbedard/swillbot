@@ -10,7 +10,6 @@ const { JSDOM } = jsdom;
 const axios = require("axios").default;
 const http = require("http");
 const https = require("https");
-const moment = require("moment");
 
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
@@ -23,7 +22,7 @@ function scrapeWineInfoPromise(query) {
 }
 
 function scrapeWineInfo(query, resolve, reject) {
-  console.log(`Sending info for ${query}... (${requestsLeft} requests left in pool)`);
+  console.log(`Sending info for ${query}...`);
 
   const context = `Search for wine '${query}'`;
   axios
@@ -38,10 +37,6 @@ function scrapeWineInfo(query, resolve, reject) {
         data = data.toString("utf8");
       }
       //console.log(data);
-
-      if (requestsLeft == 0) {
-        sleepEnd = moment().add(waitFor, "seconds");
-      }
 
       const dom = new JSDOM(data);
 
