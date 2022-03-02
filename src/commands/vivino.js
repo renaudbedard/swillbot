@@ -249,6 +249,14 @@ const handler = async function(payload, res) {
       )
     );
 
+    if (wineInfos.any(x => x.inError && x.message.includes("status code 429"))) {
+      util.sendDelayedResponse(
+        util.formatError({ source: "Fetching wine infos from Vivino", message: "Too many requests, try again later" }),
+        payload.response_url
+      );
+      return;
+    }
+
     const wineDetails = await Promise.all(wineInfos.map(x => (x.inError ? x : scrapeWineDetailsPromise(x)))).catch(util.onErrorRethrow);
 
     const message = formatWineInfoSlackMessage(payload.user_id, text, wineDetails, nextQueries);
