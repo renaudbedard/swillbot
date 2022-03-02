@@ -15,7 +15,7 @@ const moment = require("moment");
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
-const waitFor = 5;
+const waitFor = 10;
 
 var sleepEnd = null;
 
@@ -29,10 +29,7 @@ function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
     console.log(`Sleeping ${waitFor} seconds after a 429 on ${query}`);
     sleepEnd = moment().add(waitFor, "seconds");
-    sleep(waitFor * 1000).then(() => {
-      console.log(`Retrying ${query}...`);
-      retry();
-    });
+    sleep(waitFor * 1000).then(retry);
     return;
   }
   reject({
@@ -49,14 +46,16 @@ function scrapeWineInfoPromise(query) {
 }
 
 function scrapeWineInfo(query, resolve, reject) {
+  const retry = () => {
+    console.log(`Retrying info for ${query}...`);
+    scrapeWineInfo(query, resolve, reject);
+  };
+
   if (sleepEnd) {
     const msToWait = sleepEnd.diff(moment(), "milliseconds");
     if (msToWait > 0) {
       console.log(`Sleeping ${msToWait / 1000} second on info for ${query} (we are otherwise sleeping)`);
-      sleep(msToWait).then(() => {
-        console.log(`Retrying ${query}...`);
-        scrapeWineInfo(query, resolve, reject);
-      });
+      sleep(msToWait).then(retry);
       return;
     }
   }
@@ -112,9 +111,7 @@ function scrapeWineInfo(query, resolve, reject) {
       }
     })
     .catch(function(err) {
-      handleHttpError(err, context, query, reject, () => {
-        scrapeWineInfo(query, resolve, reject);
-      });
+      handleHttpError(err, context, query, reject, retry);
     });
 }
 
@@ -125,14 +122,16 @@ function scrapeWineDetailsPromise(wineInfo) {
 }
 
 function scrapeWineDetails(wineInfo, resolve, reject) {
+  const retry = () => {
+    console.log(`Retrying info for ${query}...`);
+    scrapeWineDetails(wineInfo, resolve, reject);
+  };
+
   if (sleepEnd) {
     const msToWait = sleepEnd.diff(moment(), "milliseconds");
     if (msToWait > 0) {
-      console.log(`Sleeping ${msToWait / 1000} second on info for ${query} (we are otherwise sleeping)`);
-      sleep(msToWait).then(() => {
-        console.log(`Retrying ${query}...`);
-        scrapeWineDetails(wineInfo, resolve, reject);
-      });
+      console.log(`Sleeping ${msToWait / 1000} second on details for ${query} (we are otherwise sleeping)`);
+      sleep(msToWait).then(retry);
       return;
     }
   }
@@ -206,9 +205,7 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
       }
     })
     .catch(function(err) {
-      handleHttpError(err, context, query, reject, () => {
-        scrapeWineDetails(wineDetails, resolve, reject);
-      });
+      handleHttpError(err, context, query, reject, retry);
     });
 }
 
