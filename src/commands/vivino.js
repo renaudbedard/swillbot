@@ -14,7 +14,7 @@ const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
 function handleHttpError(err, context, query, reject) {
-  if (err.status == 429 && err.response) {
+  if (err.response && err.response.status == 429) {
     const retryAfter = err.response.headers["retry-after"];
     if (retryAfter) {
       reject({
