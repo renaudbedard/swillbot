@@ -249,7 +249,7 @@ const handler = async function(payload, res) {
       )
     );
 
-    if (wineInfos.some(x => x.inError && x.message.includes("status code 429"))) {
+    if (wineInfos.some(x => x.inError && x.message && x.message.includes("status code 429"))) {
       util.sendDelayedResponse(
         util.formatError({ source: "Fetching wine infos from Vivino", message: "Too many requests, try again later" }),
         payload.response_url
