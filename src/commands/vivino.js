@@ -61,7 +61,7 @@ function scrapeWineInfo(query, resolve, reject) {
       } catch (err) {
         reject({
           source: context,
-          message: `${err}\n${err.stack}`,
+          message: `${err.stack}`,
           exactQuery: query
         });
       }
@@ -69,7 +69,7 @@ function scrapeWineInfo(query, resolve, reject) {
     .catch(function(err) {
       reject({
         source: context,
-        message: `${err}\n${err.stack}`,
+        message: `${err}`,
         exactQuery: query
       });
     });
@@ -142,7 +142,7 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
       } catch (err) {
         reject({
           source: context,
-          message: `${err}\n${err.stack}`,
+          message: `${err.stack}`,
           exactQuery: query
         });
       }
@@ -150,7 +150,7 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
     .catch(function(err) {
       reject({
         source: context,
-        message: `${err}\n${err.stack}`,
+        message: `${err}`,
         exactQuery: query
       });
     });
@@ -249,7 +249,7 @@ const handler = async function(payload, res) {
       )
     );
 
-    if (wineInfos.some(x => x.inError && x.message && x.message.includes("status code 429"))) {
+    if (wineInfos.some(x => x.inError && x.errorMessage && x.errorMessage.includes("status code 429"))) {
       util.sendDelayedResponse(
         util.formatError({ source: "Fetching wine infos from Vivino", message: "Too many requests, try again later" }),
         payload.response_url
