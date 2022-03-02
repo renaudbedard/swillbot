@@ -21,8 +21,8 @@ function sleep(ms) {
 
 function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
-    console.log(`Sleeping 1 second after a 429 on ${query}`);
-    sleep(1000).then(() => {
+    console.log(`Sleeping 5 seconds after a 429 on ${query}`);
+    sleep(5000).then(() => {
       console.log(`Retrying ${query}...`);
       retry();
     });
