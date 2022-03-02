@@ -15,7 +15,7 @@ const moment = require("moment");
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
-const waitFor = 15;
+const waitFor = 30;
 const requestsPerBatch = 50;
 
 var requestsLeft = requestsPerBatch;
@@ -33,9 +33,9 @@ function sleep(ms) {
 
 function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
-    console.log(`Sleeping ${waitFor} seconds after a 429 on ${query}`);
-    sleepEnd = moment().add(waitFor, "seconds");
-    sleep(waitFor * 1000).then(retry);
+    console.log(`Sleeping ${waitFor * 2} seconds after a 429 on ${query}`);
+    sleepEnd = moment().add(waitFor * 2, "seconds");
+    sleep(waitFor * 2 * 1000).then(retry);
     return;
   }
   reject({
@@ -66,7 +66,6 @@ function scrapeWineInfo(query, resolve, reject) {
 
   const msToWait = sleepEnd.diff(moment(), "milliseconds");
   if (msToWait > 0) {
-    console.log(`Sleeping ${msToWait / 1000} more seconds...`);
     sleep(msToWait).then(() => {
       if (fillRequests) {
         console.log("Refilled request pool.");
