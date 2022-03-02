@@ -49,6 +49,10 @@ function scrapeWineInfoPromise(query) {
 
 function scrapeWineInfo(query, resolve, reject) {
   const retry = () => {
+    if (requestsLeft <= 0 && sleepEnd.diff(moment(), "milliseconds") <= 0) {
+      requestsLeft = requestsPerBatch;
+    }
+
     console.log(`Retrying info for ${query}...`);
     scrapeWineInfo(query, resolve, reject);
   };
@@ -74,10 +78,6 @@ function scrapeWineInfo(query, resolve, reject) {
       httpsAgent: secureAgent
     })
     .then(function(response) {
-      if (requestsLeft <= 0 && sleepEnd.diff(moment(), "milliseconds") <= 0) {
-        requestsLeft = requestsPerBatch;
-      }
-
       var data = response.data;
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
