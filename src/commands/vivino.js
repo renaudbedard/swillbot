@@ -12,11 +12,11 @@ const http = require("http");
 const https = require("https");
 const moment = require("moment");
 
-const agent = new http.Agent({ keepAlive: true });
-const secureAgent = new https.Agent({ keepAlive: true });
+const agent = new http.Agent({ keepAlive: false });
+const secureAgent = new https.Agent({ keepAlive: false });
 
-const waitFor = 30;
-const requestsPerBatch = 50;
+const waitFor = 5;
+const requestsPerBatch = 10;
 
 var requestsLeft = requestsPerBatch;
 var refillPending = false;
@@ -33,9 +33,9 @@ function sleep(ms) {
 
 function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
-    console.log(`Sleeping ${waitFor * 2} seconds after a 429 on ${query}`);
-    sleepEnd = moment().add(waitFor * 2, "seconds");
-    sleep(waitFor * 2 * 1000).then(retry);
+    console.log(`Sleeping ${waitFor} seconds after a 429 on ${query}`);
+    sleepEnd = moment().add(waitFor, "seconds");
+    sleep(waitFor * 1000).then(retry);
     return;
   }
   reject({
