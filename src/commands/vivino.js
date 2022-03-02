@@ -13,22 +13,19 @@ const https = require("https");
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
-function handleHttpError(err, context, query, reject) {
+function sleep(ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
-    const retryAfter = err.response.headers["retry-after"];
-    if (retryAfter) {
-      reject({
-        source: context,
-        message: `Too Many Requests; Retry After ${retryAfter}`,
-        exactQuery: query
-      });
-    } else {
-      reject({
-        source: context,
-        message: `Too Many Requests`,
-        exactQuery: query
-      });
-    }
+    console.log(`Sleeping 1 second after a 429 on ${query}`);
+    sleep(1000).then(() => {
+      console.log(`Retrying ${query}...`);
+      retry();
+    });
     return;
   }
   reject({
@@ -38,138 +35,150 @@ function handleHttpError(err, context, query, reject) {
   });
 }
 
-function scrapeWineInfo(query) {
-  const context = `Search for wine '${query}'`;
+function scrapeWineInfoPromise(query) {
   return new Promise((resolve, reject) => {
-    axios
-      .get("https://www.vivino.com/search/wines", {
-        params: { q: query },
-        httpAgent: agent,
-        httpsAgent: secureAgent
-      })
-      .then(function(response) {
-        var data = response.data;
-        if (Buffer.isBuffer(data)) {
-          data = data.toString("utf8");
-        }
-        //console.log(data);
-
-        const dom = new JSDOM(data);
-
-        try {
-          var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
-          var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
-          var imageLink = cardDiv
-            .querySelector("figure.wine-card__image")
-            .getAttribute("style")
-            .match(/url\(\/\/(.+)\)/)[1];
-          imageLink = `http://${imageLink}`;
-          var wineName = cardDiv.querySelector(".wine-card__name span").textContent.trim();
-          var region = cardDiv.querySelector(".wine-card__region a").textContent;
-          var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
-          var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
-          var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
-          var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
-
-          resolve({
-            query: query,
-            name: wineName,
-            link: winePageLink,
-            rating_score: averageRating,
-            rating_count: ratingCount,
-            label_url: imageLink,
-            region: region,
-            country: country,
-            emojiPrefix: null
-          });
-        } catch (err) {
-          reject({
-            source: context,
-            message: `${err}`,
-            exactQuery: query
-          });
-        }
-      })
-      .catch(function(err) {
-        handleHttpError(err, context, query, reject);
-      });
+    scrapeWineInfo(query, resolve, reject);
   });
 }
 
-function scrapeWineDetails(wineInfo) {
-  const context = `Fetching wine details for '${wineInfo.name}'`;
+function scrapeWineInfo(query, resolve, reject) {
+  const context = `Search for wine '${query}'`;
+  axios
+    .get("https://www.vivino.com/search/wines", {
+      params: { q: query },
+      httpAgent: agent,
+      httpsAgent: secureAgent
+    })
+    .then(function(response) {
+      var data = response.data;
+      if (Buffer.isBuffer(data)) {
+        data = data.toString("utf8");
+      }
+      //console.log(data);
+
+      const dom = new JSDOM(data);
+
+      try {
+        var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+        var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
+        var imageLink = cardDiv
+          .querySelector("figure.wine-card__image")
+          .getAttribute("style")
+          .match(/url\(\/\/(.+)\)/)[1];
+        imageLink = `http://${imageLink}`;
+        var wineName = cardDiv.querySelector(".wine-card__name span").textContent.trim();
+        var region = cardDiv.querySelector(".wine-card__region a").textContent;
+        var country = cardDiv.querySelector('.wine-card__region a[data-item-type="country"]').textContent;
+        var averageRating = parseFloat(cardDiv.querySelector(".average__number").textContent.replace(",", "."));
+        var ratingCountElement = cardDiv.querySelector(".average__stars .text-micro");
+        var ratingCount = ratingCountElement ? parseInt(ratingCountElement.textContent.split(" ")[0]) : 0;
+
+        resolve({
+          query: query,
+          name: wineName,
+          link: winePageLink,
+          rating_score: averageRating,
+          rating_count: ratingCount,
+          label_url: imageLink,
+          region: region,
+          country: country,
+          emojiPrefix: null
+        });
+      } catch (err) {
+        reject({
+          source: context,
+          message: `${err}`,
+          exactQuery: query
+        });
+      }
+    })
+    .catch(function(err) {
+      handleHttpError(err, context, query, reject, () => {
+        scrapeWineInfo(query, resolve, reject);
+      });
+    });
+}
+
+function scrapeWineDetailsPromise(wineInfo) {
   return new Promise((resolve, reject) => {
-    axios
-      .get(wineInfo.link, {
-        httpAgent: agent,
-        httpsAgent: secureAgent
-      })
-      .then(function(response) {
-        var data = response.data;
-        if (Buffer.isBuffer(data)) {
-          data = data.toString("utf8");
-        }
-        //console.log(data);
+    scrapeWineDetails(wineInfo, resolve, reject);
+  });
+}
 
-        try {
-          // this is very unsafe but oh well
-          const dom = new JSDOM(data, { runScripts: "dangerously" });
-          //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
+function scrapeWineDetails(wineInfo, resolve, reject) {
+  const context = `Fetching wine details for '${wineInfo.name}'`;
+  axios
+    .get(wineInfo.link, {
+      httpAgent: agent,
+      httpsAgent: secureAgent
+    })
+    .then(function(response) {
+      var data = response.data;
+      if (Buffer.isBuffer(data)) {
+        data = data.toString("utf8");
+      }
+      //console.log(data);
 
-          var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
+      try {
+        // this is very unsafe but oh well
+        const dom = new JSDOM(data, { runScripts: "dangerously" });
+        //console.log(dom.window.__PRELOADED_STATE__.winePageInformation);
 
-          if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
-            const wineMetadata = pageInfo.vintage.wine;
+        var pageInfo = dom.window.__PRELOADED_STATE__.winePageInformation || dom.window.__PRELOADED_STATE__.vintagePageInformation;
 
-            if (wineMetadata.grapes) {
-              wineInfo.grapes = wineMetadata.grapes.map(x => x.name).join(", ");
-            }
+        if (pageInfo && pageInfo.vintage && pageInfo.vintage.wine) {
+          const wineMetadata = pageInfo.vintage.wine;
 
-            if (wineMetadata.type_id) {
-              switch (wineMetadata.type_id) {
-                case 1:
-                  wineInfo.type = "Red wine";
-                  break;
-                case 2:
-                  wineInfo.type = "White wine";
-                  wineInfo.emojiPrefix = "white";
-                  break;
-                case 3:
-                  wineInfo.type = "Sparkling wine";
-                  break;
-                case 4:
-                  wineInfo.type = "Rosé wine";
-                  wineInfo.emojiPrefix = "rosé";
-                  break;
-                case 24:
-                  wineInfo.type = "Fortified wine";
-                  break;
-                case 7:
-                  wineInfo.type = "Dessert wine";
-                  break;
-              }
-            }
+          if (wineMetadata.grapes) {
+            wineInfo.grapes = wineMetadata.grapes.map(x => x.name).join(", ");
+          }
 
-            if (wineInfo.rating_count == 0 && wineMetadata.statistics) {
-              wineInfo.rating_score = wineMetadata.statistics.ratings_average;
-              wineInfo.rating_count = wineMetadata.statistics.ratings_count;
-              wineInfo.ratings_all_vintages = true;
+          if (wineMetadata.type_id) {
+            switch (wineMetadata.type_id) {
+              case 1:
+                wineInfo.type = "Red wine";
+                break;
+              case 2:
+                wineInfo.type = "White wine";
+                wineInfo.emojiPrefix = "white";
+                break;
+              case 3:
+                wineInfo.type = "Sparkling wine";
+                break;
+              case 4:
+                wineInfo.type = "Rosé wine";
+                wineInfo.emojiPrefix = "rosé";
+                break;
+              case 24:
+                wineInfo.type = "Fortified wine";
+                break;
+              case 7:
+                wineInfo.type = "Dessert wine";
+                break;
             }
           }
 
-          resolve(wineInfo);
-        } catch (err) {
-          reject({
-            source: context,
-            message: `${err}`,
-            exactQuery: query
-          });
+          if (wineInfo.rating_count == 0 && wineMetadata.statistics) {
+            wineInfo.rating_score = wineMetadata.statistics.ratings_average;
+            wineInfo.rating_count = wineMetadata.statistics.ratings_count;
+            wineInfo.ratings_all_vintages = true;
+          }
         }
-      })
-      .catch(function(err) {
-        handleHttpError(err, context, query, reject);
+
+        resolve(wineInfo);
+      } catch (err) {
+        reject({
+          source: context,
+          message: `${err}`,
+          exactQuery: query
+        });
+      }
+    })
+    .catch(function(err) {
+      handleHttpError(err, context, query, reject, () => {
+        scrapeWineDetails(wineDetails, resolve, reject);
       });
-  });
+    });
 }
 
 /**
@@ -241,7 +250,7 @@ const handler = async function(payload, res) {
     // strip newlines and replace with spaces
     let text = payload.text.replace(/[\n\r]/g, " ");
     const wineQueries = util.getQueries(text);
-    const wineInfoPromises = wineQueries.map(x => scrapeWineInfo(x.trim()));
+    const wineInfoPromises = wineQueries.map(x => scrapeWineInfoPromise(x.trim()));
 
     const wineInfos = await Promise.all(
       wineInfoPromises.map(p =>
