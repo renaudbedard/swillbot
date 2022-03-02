@@ -11,7 +11,6 @@ const axios = require("axios").default;
 const http = require("http");
 const https = require("https");
 const moment = require("moment");
-const { min } = require("lodash");
 
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
@@ -95,7 +94,7 @@ function scrapeWineInfo(query, resolve, reject) {
   axios
     .get("https://www.vivino.com/search/wines", {
       params: { q: query },
-      headers: { "user-agent": userAgents[min(batchIndex, userAgents.length - 1)] },
+      headers: { "user-agent": userAgents[Math.min(batchIndex, userAgents.length - 1)] },
       httpAgent: agent,
       httpsAgent: secureAgent
     })
