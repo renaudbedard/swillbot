@@ -15,12 +15,14 @@ const moment = require("moment");
 const agent = new http.Agent({ keepAlive: true });
 const secureAgent = new https.Agent({ keepAlive: true });
 
-const waitFor = 30;
+const waitFor = [15, 30, 45, 60, 90, 120];
 const requestsPerBatch = 50;
+
 var requestsLeft = requestsPerBatch;
 var refillPending = false;
 var totalResults = 0;
 var resultsToGet = 0;
+var waitIndex = 0;
 
 var sleepEnd = moment();
 
@@ -32,9 +34,13 @@ function sleep(ms) {
 
 function handleHttpError(err, context, query, reject, retry) {
   if (err.response && err.response.status == 429) {
-    console.log(`Sleeping ${waitFor} seconds after a 429 on ${query}`);
-    sleepEnd = moment().add(waitFor, "seconds");
-    sleep(waitFor * 1000).then(retry);
+    if (moment().diff(sleepEnd, "milliseconds") > 0) {
+      console.log("Incrementing wait time.");
+      waitIndex = min(waitIndex + 1, waitFor.length - 1);
+    }
+    console.log(`Sleeping ${waitFor[waitIndex]} seconds after a 429 on ${query}`);
+    sleepEnd = moment().add(waitFor[waitIndex], "seconds");
+    sleep(waitFor[waitIndex] * 1000).then(retry);
     return;
   }
   reject({
@@ -57,8 +63,8 @@ function scrapeWineInfo(query, resolve, reject) {
 
   var fillRequests = false;
   if (requestsLeft <= 0) {
-    if (!refillPending) console.log(`Requests depleted, waiting ${waitFor} seconds...`);
-    sleepEnd = moment().add(waitFor, "seconds");
+    if (!refillPending) console.log(`Requests depleted, waiting ${waitFor[waitIndex]} seconds...`);
+    sleepEnd = moment().add(waitFor[waitIndex], "seconds");
     if (!refillPending) fillRequests = true;
     refillPending = true;
   }
@@ -299,6 +305,7 @@ const handler = async function(payload, res) {
     res.status(200).json(util.formatReceipt());
 
     totalResults = 0;
+    waitIndex = 0;
     requestsLeft = requestsPerBatch;
 
     // strip newlines and replace with spaces
