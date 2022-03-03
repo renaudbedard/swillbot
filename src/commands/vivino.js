@@ -192,10 +192,10 @@ function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
 
   // add in-error attachments first
   const wineInfosPerError = groupBy(wineInfos.filter(x => x.inError), x => x.errorMessage);
-  for (const [errorMessage, wineInfos] of Object.entries(wineInfosPerError)) {
+  for (const [errorMessage, infos] of wineInfosPerError.entries()) {
     let attachment = {
       color: "#ff0000",
-      text: `*Couldn't find matching wine for :* \`${wineInfos.map(x => x.query).join(", ")}\`\n\`\`\`(${errorMessage})\`\`\``
+      text: `*Couldn't find matching wine for :* \`${infos.map(x => x.query).join(", ")}\`\n\`\`\`(${errorMessage})\`\`\``
     };
     slackMessage.attachments.push(attachment);
   }
