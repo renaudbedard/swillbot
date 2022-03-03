@@ -191,7 +191,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
   }
 
   // add in-error attachments first
-  const wineInfosPerError = groupBy(wineInfos.filter(x => x.inError), x => pet.errorMessage);
+  const wineInfosPerError = groupBy(wineInfos.filter(x => x.inError), x => x.errorMessage);
   for (const [errorMessage, wineInfos] of Object.entries(wineInfosPerError)) {
     let attachment = {
       color: "#ff0000",
