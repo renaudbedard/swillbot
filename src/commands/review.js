@@ -526,8 +526,12 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
+    console.log(`starto`);
+
     if (slackUser == null) untappdUsers = await getUntappdUsers();
     else untappdUsers = [await getUntappdUser(slackUser)];
+
+    console.log(`got untappd user : ${untappdUsers}`);
 
     let beerId = { id: -1 };
     let beerInfo = null;
