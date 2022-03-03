@@ -34,6 +34,7 @@ function scrapeWineInfo(query, resolve, reject) {
 
       try {
         var cardDiv = dom.window.document.querySelector(".search-results-list > div:first-child");
+        if (!cardDiv) throw new Error("Missing card div element in wine info page; this wine probably couldn't be matched.");
         var winePageLink = `http://vivino.com${cardDiv.querySelector("a").getAttribute("href")}`;
         var imageLink = cardDiv
           .querySelector("figure.wine-card__image")
