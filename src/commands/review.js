@@ -537,7 +537,10 @@ const handler = async function(payload, res) {
 
     if (!fuzzyGather) {
       beerId = await util.searchForBeerId(query);
+      console.log(`got beer id : ${beerId}`);
+
       beerInfo = await util.getBeerInfo(beerId.id, query);
+      console.log(`got beer info : ${beerInfo.beer_name}`);
 
       const parent = beerInfo.variant_parent || beerInfo.vintage_parent;
       if (parent && parent.beer) parentId = parent.beer.bid;
@@ -550,6 +553,8 @@ const handler = async function(payload, res) {
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId.id, beerName, parentId, vintageIds, fuzzyGather))).catch(
       util.onErrorRethrow
     );
+
+    console.log(`got ${reviews.count} reviews`);
 
     const botUsers = ["Bresson", "Sebastouflant", "matatatow", "vin100limite", "renaudbedard", "AleAleAleB"];
 
