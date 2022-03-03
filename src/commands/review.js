@@ -38,6 +38,7 @@ async function getUntappdUsers() {
  * @return {Promise<any>} The Untappd user info
  */
 async function getUntappdUser(slackUserId) {
+  console.log(`fetching Untappd user for slack user ID : ${slackUserId}`);
   const result = await util.tryPgQuery(
     null,
     `select untappd_username, last_review_fetch_timestamp 
@@ -54,6 +55,8 @@ async function getUntappdUser(slackUserId) {
     };
     throw err;
   }
+
+  console.log(`Got ${result.rows.length} results`);
   return {
     name: result.rows[0].untappd_username,
     lastReviewFetchTimestamp: result.rows[0].last_review_fetch_timestamp
