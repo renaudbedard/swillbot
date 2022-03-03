@@ -62,7 +62,7 @@ function scrapeWineInfo(query, resolve, reject) {
       } catch (err) {
         reject({
           source: context,
-          message: `${err.stack}`,
+          message: `${err}`,
           exactQuery: query
         });
       }
@@ -143,7 +143,7 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
       } catch (err) {
         reject({
           source: context,
-          message: `${err.stack}`,
+          message: `${err}`,
           exactQuery: query
         });
       }
@@ -196,7 +196,7 @@ function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
   for (const [errorMessage, infos] of wineInfosPerError.entries()) {
     let attachment = {
       color: "#ff0000",
-      text: `*Couldn't find matching wine for :* \`${infos.map(x => x.query).join(", ")}\`\n\`\`\`(${errorMessage})\`\`\``
+      text: `*Couldn't find matching wine for :* \`${infos.map(x => x.query).join(", ")}\`\n\`\`\`${errorMessage}\`\`\``
     };
     slackMessage.attachments.push(attachment);
   }
