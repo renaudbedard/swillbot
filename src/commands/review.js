@@ -19,6 +19,7 @@ const alec = require("./alec");
  * @return {Promise<any[]>} All registered Untappd users' info
  */
 async function getUntappdUsers() {
+  console.log(`fetching Untappd users`);
   const result = await util.tryPgQuery(
     null,
     `select untappd_username, last_review_fetch_timestamp 
@@ -26,7 +27,7 @@ async function getUntappdUsers() {
     null,
     `Fetch all Untappd usernames`
   );
-  //console.log(`found ${result.rows.length} users`);
+  console.log(`found ${result.rows.length} users`);
   return result.rows.map(x => {
     return { name: x.untappd_username, lastReviewFetchTimestamp: x.last_review_fetch_timestamp };
   });
