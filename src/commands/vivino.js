@@ -156,6 +156,20 @@ function scrapeWineDetails(wineInfo, resolve, reject) {
     });
 }
 
+function groupBy(list, keyGetter) {
+  const map = new Map();
+  list.forEach(item => {
+    const key = keyGetter(item);
+    const collection = map.get(key);
+    if (!collection) {
+      map.set(key, [item]);
+    } else {
+      collection.push(item);
+    }
+  });
+  return map;
+}
+
 /**
  * @param {string} source The user ID that made the request
  * @param {string} query The original request
@@ -177,14 +191,13 @@ function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
   }
 
   // add in-error attachments first
-  for (let wineInfo of wineInfos) {
-    if (wineInfo.inError) {
-      let attachment = {
-        color: "#ff0000",
-        text: `*Couldn't find matching wine for :* \`${wineInfo.query}\`\n\`\`\`(${wineInfo.errorMessage})\`\`\``
-      };
-      slackMessage.attachments.push(attachment);
-    }
+  const wineInfosPerError = groupBy(wineInfos.filter(x => x.inError), x => pet.errorMessage);
+  for (const [errorMessage, wineInfos] of Object.entries(wineInfosPerError)) {
+    let attachment = {
+      color: "#ff0000",
+      text: `*Couldn't find matching wine for :* \`${wineInfos.map(x => x.query).join(", ")}\`\n\`\`\`(${errorMessage})\`\`\``
+    };
+    slackMessage.attachments.push(attachment);
   }
 
   // filter 'em out
