@@ -124,7 +124,6 @@ function sendDelayedResponse(message, responseUrl) {
  */
 async function tryPgQuery(client, query, values, context) {
   try {
-    // ensure table exists
     return await (client || pgPool).query(query, values);
   } catch (err) {
     console.log(err.stack);
