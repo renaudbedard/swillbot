@@ -19,7 +19,6 @@ const alec = require("./alec");
  * @return {Promise<any[]>} All registered Untappd users' info
  */
 async function getUntappdUsers() {
-  console.log(`fetching Untappd users`);
   const result = await util.tryPgQuery(
     null,
     `select untappd_username, last_review_fetch_timestamp 
@@ -27,7 +26,6 @@ async function getUntappdUsers() {
     null,
     `Fetch all Untappd usernames`
   );
-  console.log(`found ${result.rows.length} users`);
   return result.rows.map(x => {
     return { name: x.untappd_username, lastReviewFetchTimestamp: x.last_review_fetch_timestamp };
   });
@@ -38,7 +36,6 @@ async function getUntappdUsers() {
  * @return {Promise<any>} The Untappd user info
  */
 async function getUntappdUser(slackUserId) {
-  console.log(`fetching Untappd user for slack user ID : ${slackUserId}`);
   const result = await util.tryPgQuery(
     null,
     `select untappd_username, last_review_fetch_timestamp 
@@ -56,7 +53,6 @@ async function getUntappdUser(slackUserId) {
     throw err;
   }
 
-  console.log(`Got ${result.rows.length} results`);
   return {
     name: result.rows[0].untappd_username,
     lastReviewFetchTimestamp: result.rows[0].last_review_fetch_timestamp
@@ -530,12 +526,8 @@ const handler = async function(payload, res) {
   try {
     res.status(200).json(util.formatReceipt());
 
-    console.log(`starto`);
-
     if (slackUser == null) untappdUsers = await getUntappdUsers();
     else untappdUsers = [await getUntappdUser(slackUser)];
-
-    console.log(`got untappd user : ${untappdUsers}`);
 
     let beerId = { id: -1 };
     let beerInfo = null;
@@ -545,10 +537,8 @@ const handler = async function(payload, res) {
 
     if (!fuzzyGather) {
       beerId = await util.searchForBeerId(query);
-      console.log(`got beer id : ${beerId}`);
 
       beerInfo = await util.getBeerInfo(beerId.id, query);
-      console.log(`got beer info : ${beerInfo.beer_name}`);
 
       const parent = beerInfo.variant_parent || beerInfo.vintage_parent;
       if (parent && parent.beer) parentId = parent.beer.bid;
@@ -561,8 +551,6 @@ const handler = async function(payload, res) {
     const reviews = await Promise.all(untappdUsers.map(user => findReview(user, beerId.id, beerName, parentId, vintageIds, fuzzyGather))).catch(
       util.onErrorRethrow
     );
-
-    console.log(`got ${reviews.count} reviews`);
 
     const botUsers = ["Bresson", "Sebastouflant", "matatatow", "vin100limite", "renaudbedard", "AleAleAleB"];
 
