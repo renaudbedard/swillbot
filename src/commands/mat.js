@@ -29,7 +29,7 @@ async function getFakeReviewAttachment(beerInfo, userId) {
   const response = await openai.createCompletionFromModel({
     model: modelId,
     prompt: `${shortStyle} ->`,
-    max_tokens: 96,
+    max_tokens: 112,
     stop: [" END"],
     temperature: 1.0,
     user: userId
