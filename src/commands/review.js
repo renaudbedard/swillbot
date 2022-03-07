@@ -421,16 +421,17 @@ async function formatReviewSlackMessage(source, query, users, reviews, beerInfo,
     attachment.thumb_url = beerInfo.beer_label;
     if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
     else attachment.title = `${beerInfo.beer_name}`;
-    attachment.text = `${ratingString}`;
+    let ibuFragment = beerInfo.beer_ibu ? ` — ${beerInfo.beer_ibu} IBU` : "";
+    attachment.text = `${ratingString}\n_${beerInfo.beer_style} — ${beerInfo.beer_abv}% ABV${ibuFragment}_`;
     skipAttachment = false;
     slackMessage.attachments.push(attachment);
-    attachment = { color: "#ffcc00", text: "" };
+    attachment = { color: "#ffffff", text: "" };
   }
 
   for (let i = 0; i < users.length; i++) {
     if (i > 0 && !skipAttachment) {
       slackMessage.attachments.push(attachment);
-      attachment = { color: "#ffcc00", text: "" };
+      attachment = { color: "#ffffff", text: "" };
     }
     skipAttachment = false;
 
@@ -439,26 +440,32 @@ async function formatReviewSlackMessage(source, query, users, reviews, beerInfo,
         let fakeReview = simon.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+        attachment.color = "#808080";
       } else if (users[i].name == "Sebastouflant") {
         let fakeReview = await seb.getFakeReviewAttachment(beerInfo, source);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+        attachment.color = "#808080";
       } else if (users[i].name == "matatatow") {
         let fakeReview = await mat.getFakeReviewAttachment(beerInfo, source);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+        attachment.color = "#808080";
       } else if (users[i].name == "vin100limite") {
         let fakeReview = await vin.getFakeReviewAttachment(beerInfo, source);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+        attachment.color = "#808080";
       } else if (users[i].name == "renaudbedard") {
         let fakeReview = await ren.getFakeReviewAttachment(beerInfo, source);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+        attachment.color = "#808080";
       } else if (users[i].name == "AleAleAleB") {
         let fakeReview = alec.getFakeReviewAttachment(beerInfo);
         attachment.text = fakeReview.text;
         attachment.thumb_url = fakeReview.thumb_url;
+        attachment.color = "#808080";
       } else {
         skipAttachment = true;
       }
@@ -475,7 +482,7 @@ async function formatReviewSlackMessage(source, query, users, reviews, beerInfo,
           slackMessage.attachments.push(attachment);
         }
         skipAttachment = false;
-        attachment = { color: "#ffcc00", text: "" };
+        attachment = { color: "#ffffff", text: "" };
       }
       const ratingString = util.getRatingString(reviewInfo.rating);
 
