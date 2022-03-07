@@ -414,6 +414,11 @@ async function formatReviewSlackMessage(source, query, users, reviews, beerInfo,
   if (beerInfo == null) {
     skipAttachment = true;
   } else {
+    let ratingString = `${util.getRatingString(beerInfo.rating_score)} (*${beerInfo.weighted_rating_score.toFixed(2)}* weighted) (${
+      beerInfo.rating_count
+    } ratings)`;
+    attachment.pretext += `\n${ratingString}`;
+
     attachment.title_link = `https://untappd.com/b/${beerInfo.beer_slug}/${beerInfo.bid}`;
     attachment.thumb_url = beerInfo.beer_label;
     if (beerInfo.brewery) attachment.title = `${beerInfo.brewery.brewery_name} – ${beerInfo.beer_name}`;
