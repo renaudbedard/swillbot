@@ -234,7 +234,10 @@ function formatWineInfoSlackMessage(source, query, wineInfos, nextQueries) {
   var shortQuery = query;
   if (query.length > 1900) shortQuery = query.substring(0, 1900) + " [...]";
 
-  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>:\n\`\`\`/vivino ${shortQuery}\`\`\``;
+  if (slackMessage.attachments.length > 0) {
+    if (shortQuery.includes(",")) slackMessage.attachments[0].pretext = `<@${source}>:\n\`\`\`/vivino ${shortQuery}\`\`\``;
+    else slackMessage.attachments[0].pretext = `<@${source}>: \`/vivino ${shortQuery}\``;
+  }
 
   return slackMessage;
 }
