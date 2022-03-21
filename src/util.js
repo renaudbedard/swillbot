@@ -281,15 +281,14 @@ async function tryOpenAiRequest(modelId, thumbUrl, beerInfo, botName, maxTokens,
 
   var shortStyle = beerInfo.beer_style.split(" -")[0];
 
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY
-  });
-  const openai = new OpenAIApi(configuration);
-
   let response = null;
   let attempts = 0;
   while (response === null && attempts < 3) {
     try {
+      const configuration = new Configuration({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+      const openai = new OpenAIApi(configuration);
       response = await openai.createCompletionFromModel({
         model: modelId,
         prompt: `${shortStyle} ->`,
@@ -299,7 +298,12 @@ async function tryOpenAiRequest(modelId, thumbUrl, beerInfo, botName, maxTokens,
         user: userId
       });
     } catch (err) {
+      response = null;
       attempts++;
+      if (attempts == 3) {
+        throw err;
+      }
+      console.log(`Failed with err : ${err}, retrying (attempt ${attempts})`);
     }
   }
 
@@ -320,7 +324,7 @@ async function tryOpenAiRequest(modelId, thumbUrl, beerInfo, botName, maxTokens,
   if (parseFloat(textParts[0]) != NaN) {
     rating = parseFloat(textParts[0]);
   }
-  const ratingString = util.getRatingString(rating);
+  const ratingString = getRatingString(rating);
 
   attachment.text += `${ratingString}`;
   attachment.text += `\n${textParts[1]}`;
