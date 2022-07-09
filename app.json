@@ -14,5 +14,6 @@
     },
     "NODE_ENV": "staging"
   },
-  "image": "heroku/nodejs"
+  "image": "heroku/nodejs",
+  "stack": "heroku-22"
 }
