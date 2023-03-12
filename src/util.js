@@ -238,12 +238,15 @@ function getBeerInfo(beerId, query) {
     };
 
     let req = restClient.get("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
-      console.log(`data : ${JSON.stringify(data)}`);
-      if (!data.response || !data.response.beer) {
+      if (Buffer.isBuffer(data)) {
+        data = data.toString("utf8");
+      }
+      //console.log(`data : ${JSON.stringify(data)}`);
+      if (!data.response.beer) {
         reject({
           source: context,
           message: "API limit busted! Sorry, wait an hour before trying again.",
-          additionalInfo: data
+          additionalInfo: JSON.stringify(data)
         });
         return;
       }
