@@ -9,10 +9,10 @@ client.lastGetTimestamp = Date.now();
 
 client.rateLimitGet = async (url, args, callback) => 
 {
-    while (Date.now() - client.lastGetTimestamp < 100)
+    while (Date.now() - client.lastGetTimestamp < 250)
     {
         console.log(`Rate limiting for ${url}...`);
-        await new Promise(r => setTimeout(r, Date.now() - client.lastGetTimestamp));
+        await new Promise(r => setTimeout(r, 250));
     }
     client.lastGetTimestamp = Date.now();
     return client.get(url, args, callback);
