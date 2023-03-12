@@ -181,48 +181,46 @@ function searchForBeerId(query) {
   //console.log(`query : ${query}`);
   const context = `Search for beer '${query}'`;
   return new Promise((resolve, reject) => {
-    (async() => {
-      let args = {
-        parameters: _.defaults(
-          {
-            q: query,
-            limit: 1
-          },
-          untappdParams
-        )
-      };
+    let args = {
+      parameters: _.defaults(
+        {
+          q: query,
+          limit: 1
+        },
+        untappdParams
+      )
+    };
 
-      let req = await restClient.rateLimitGet("https://api.untappd.com/v4/search/beer", args, function(data, _) {
-        if (!data.response.beers) {
-          reject({
-            source: context,
-            message: "API limit busted! Sorry, wait an hour before trying again.",
-            additionalInfo: data,
-            exactQuery: query
-          });
-          return;
-        }
-        let firstResult =
-          data.response.beers.count > 0 ? data.response.beers.items[0] : data.response.homebrew.count > 0 ? data.response.homebrew.items[0] : null;
-        console.log(`found ${data.response.beers.count} results for query : ${query}`);
-        if (firstResult) {
-          console.log(`first result has beer ID of : ${firstResult.beer.bid}`);
-          resolve({
-            id: firstResult.beer.bid,
-            query: query
-          });
-        } else
-          reject({
-            source: context,
-            message: "Couldn't find matching beer!",
-            exactQuery: query
-          });
-      });
+    let req = restClient.rateLimitGet("https://api.untappd.com/v4/search/beer", args, function(data, _) {
+      if (!data.response.beers) {
+        reject({
+          source: context,
+          message: "API limit busted! Sorry, wait an hour before trying again.",
+          additionalInfo: data,
+          exactQuery: query
+        });
+        return;
+      }
+      let firstResult =
+        data.response.beers.count > 0 ? data.response.beers.items[0] : data.response.homebrew.count > 0 ? data.response.homebrew.items[0] : null;
+      console.log(`found ${data.response.beers.count} results for query : ${query}`);
+      if (firstResult) {
+        console.log(`first result has beer ID of : ${firstResult.beer.bid}`);
+        resolve({
+          id: firstResult.beer.bid,
+          query: query
+        });
+      } else
+        reject({
+          source: context,
+          message: "Couldn't find matching beer!",
+          exactQuery: query
+        });
+    });
 
-      req.on("error", function(err) {
-        reject({ source: context, message: err.toString() });
-      });
-    })();
+    req.on("error", function(err) {
+      reject({ source: context, message: err.toString() });
+    });
   });
 }
 
@@ -233,41 +231,39 @@ function searchForBeerId(query) {
 function getBeerInfo(beerId, query) {
   const context = `Get beer info for beer #${beerId}`;
   return new Promise((resolve, reject) => {
-    (async() => {
-      let args = {
-        path: {
-          id: beerId
-        },
-        parameters: untappdParams
-      };
+    let args = {
+      path: {
+        id: beerId
+      },
+      parameters: untappdParams
+    };
 
-      let req = await restClient.rateLimitGet("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
-        if (Buffer.isBuffer(data)) {
-          data = data.toString("utf8");
-        }
-        //console.log(`data : ${JSON.stringify(data)}`);
-        if (!data.response || !data.response.beer) {
-          reject({
-            source: context,
-            message: "API limit busted! Sorry, wait an hour before trying again.",
-            additionalInfo: JSON.stringify(data),
-            exactQuery: query
-          });
-          return;
-        }
-        //console.log(data.response);
-        let response = data.response.beer;
-        response.query = query;
-        resolve(response);
-      });
-
-      req.on("error", function(err) {
+    let req = restClient.rateLimitGet("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
+      if (Buffer.isBuffer(data)) {
+        data = data.toString("utf8");
+      }
+      //console.log(`data : ${JSON.stringify(data)}`);
+      if (!data.response || !data.response.beer) {
         reject({
           source: context,
-          message: err.toString()
+          message: "API limit busted! Sorry, wait an hour before trying again.",
+          additionalInfo: JSON.stringify(data),
+          exactQuery: query
         });
+        return;
+      }
+      //console.log(data.response);
+      let response = data.response.beer;
+      response.query = query;
+      resolve(response);
+    });
+
+    req.on("error", function(err) {
+      reject({
+        source: context,
+        message: err.toString()
       });
-    })();
+    });
   });
 }
 
