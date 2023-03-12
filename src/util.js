@@ -181,7 +181,7 @@ function searchForBeerId(query) {
   //console.log(`query : ${query}`);
   const context = `Search for beer '${query}'`;
   return new Promise((resolve, reject) => {
-    async() => {
+    (async() => {
       let args = {
         parameters: _.defaults(
           {
@@ -222,7 +222,7 @@ function searchForBeerId(query) {
       req.on("error", function(err) {
         reject({ source: context, message: err.toString() });
       });
-    }
+    })();
   });
 }
 
@@ -233,7 +233,7 @@ function searchForBeerId(query) {
 function getBeerInfo(beerId, query) {
   const context = `Get beer info for beer #${beerId}`;
   return new Promise((resolve, reject) => {
-    async() => {
+    (async() => {
       let args = {
         path: {
           id: beerId
@@ -267,7 +267,7 @@ function getBeerInfo(beerId, query) {
           message: err.toString()
         });
       });
-    }
+    })();
   });
 }
 
