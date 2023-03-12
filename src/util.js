@@ -191,7 +191,7 @@ function searchForBeerId(query) {
       )
     };
 
-    let req = restClient.get("https://api.untappd.com/v4/search/beer", args, function(data, _) {
+    let req = restClient.rateLimitGet("https://api.untappd.com/v4/search/beer", args, function(data, _) {
       if (!data.response.beers) {
         reject({
           source: context,
@@ -238,7 +238,7 @@ function getBeerInfo(beerId, query) {
       parameters: untappdParams
     };
 
-    let req = restClient.get("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
+    let req = restClient.rateLimitGet("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
       if (Buffer.isBuffer(data)) {
         data = data.toString("utf8");
       }
