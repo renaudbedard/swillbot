@@ -31,7 +31,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
     if (beerInfo.inError) {
       let attachment = {
         color: "#ff0000",
-        text: `*Couldn't find matching beer for :* \`${beerInfo.query}\``
+        text: `*Couldn't find matching beer for :* \`${beerInfo.query}\` (_${beerInfo.message}_)`
       };
       slackMessage.attachments.push(attachment);
     }
