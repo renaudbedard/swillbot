@@ -238,7 +238,7 @@ function getBeerInfo(beerId, query) {
     };
 
     let req = restClient.get("https://api.untappd.com/v4/beer/info/${id}", args, function(data, _) {
-      //console.log(`beer info : ${data.response.beer}`);
+      console.log(`response : ${data.response}`);
       if (!data.response || !data.response.beer) {
         reject({
           source: context,
