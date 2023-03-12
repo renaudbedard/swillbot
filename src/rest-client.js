@@ -9,10 +9,10 @@ client.rateLimitGet = (url, args, callback) =>
 {
     return client.get(url, args, function(data, _) {
         if (data.toString("utf8").includes("error code: 1015")) {
-            console.log("Got rate limited, will retry in 1 second...");
+            console.log("Got rate limited, will retry in 5 seconds...");
             setTimeout(() => {
                 client.rateLimitGet(url, args, callback);
-            }, 1000);
+            }, 5000);
         } else {
             callback(data, _);
         }
