@@ -242,7 +242,7 @@ function getBeerInfo(beerId, query) {
         data = data.toString("utf8");
       }
       //console.log(`data : ${JSON.stringify(data)}`);
-      if (!data.response.beer) {
+      if (!data.response || !data.response.beer) {
         reject({
           source: context,
           message: "API limit busted! Sorry, wait an hour before trying again.",
