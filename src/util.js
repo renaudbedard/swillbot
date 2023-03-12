@@ -247,7 +247,8 @@ function getBeerInfo(beerId, query) {
         reject({
           source: context,
           message: "API limit busted! Sorry, wait an hour before trying again.",
-          additionalInfo: JSON.stringify(data)
+          additionalInfo: JSON.stringify(data),
+          exactQuery: query
         });
         return;
       }

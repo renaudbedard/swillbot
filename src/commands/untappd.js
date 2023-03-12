@@ -106,7 +106,7 @@ const handler = async function(payload, res) {
       beerIdPromises.map(p =>
         p.catch(err => {
           // ignore errors
-          return { inError: true, query: err.exactQuery };
+          return { inError: true, query: err.exactQuery, message: err.message };
         })
       )
     );
