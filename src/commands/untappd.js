@@ -68,7 +68,7 @@ function formatBeerInfoSlackMessage(source, query, beerInfos) {
     slackMessage.attachments.push(attachment);
   }
 
-  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`/untappd ${query}\``;
+  if (slackMessage.attachments.length > 0) slackMessage.attachments[0].pretext = `<@${source}>: \`\`\`/u ${query}\`\`\``;
 
   return slackMessage;
 }
