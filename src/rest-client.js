@@ -15,7 +15,7 @@ client.rateLimitGet = async (url, args, callback) =>
         await new Promise(r => setTimeout(r, Date.now() - client.lastGetTimestamp));
     }
     client.lastGetTimestamp = Date.now();
-    client.get(url, args, callback);
+    return client.get(url, args, callback);
 };
 
 module.exports = client;
