@@ -7,6 +7,7 @@ const proxy = require("express-http-proxy");
 const bodyParser = require("body-parser");
 const config = require("./config");
 const commands = require("./commands");
+const path = require('path');
 
 let app = express();
 
@@ -23,6 +24,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => res.send("\n 👋 🌍 \n"));
 
+app.get("/media/joo_sacre", (req, res) => res.sendFile(path.resolve("media/joo_sacre.png")));
+app.get("/media/joo_sacre2", (req, res) => res.sendFile(path.resolve("media/joo_sacre2.gif")));
+app.get("/media/seb_sacre", (req, res) => res.sendFile(path.resolve("media/seb_sacre.gif")));
+app.get("/media/seb_sacre2", (req, res) => res.sendFile(path.resolve("media/seb_sacre2.gif")));
+app.get("/media/ren_sacre", (req, res) => res.sendFile(path.resolve("media/ren_sacre.png")));
+app.get("/media/ren_sacre2", (req, res) => res.sendFile(path.resolve("media/ren_sacre2.gif")));
+app.get("/media/mat_sacre", (req, res) => res.sendFile(path.resolve("media/mat_sacre.png")));
+app.get("/media/mat_sacre2", (req, res) => res.sendFile(path.resolve("media/mat_sacre2.gif")));
+app.get("/media/vip_sacre", (req, res) => res.sendFile(path.resolve("media/vip_sacre.png")));
+app.get("/media/vip_sacre2", (req, res) => res.sendFile(path.resolve("media/vip_sacre2.gif")));
+
 for (let command of commands) {
   app.post(`/commands/${command.name}`, (req, res) => {
     let payload = req.body;
@@ -34,7 +46,7 @@ for (let command of commands) {
       return;
     }
 
-    command.handler(payload, res);
+    command.handler(payload, res, req);
   });
 }
 
