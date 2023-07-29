@@ -37,6 +37,7 @@ const sacreTokébak = [
   "enfant d'chienne",
   "mangeux d'marde",
   "sacristi",
+  "sapristi",
   "viande à chien",
   "saint-ciboière",
   "colon",
@@ -189,7 +190,14 @@ const sacres = [
   "Expression de/of Philosoph(y)ie",
   "mou non fermenté",
   "lambic à salade",
-  "16$ ou ben"
+  "16$ ou ben",
+  "tsi chums",
+  "cheers bro talk",
+  "lixiviat",
+  "pissenlits pas prestigieux",
+  "eau de spa",
+  "IPA oxydée",
+  "lixiviat"
 ];
 
 function isVowel(c) {
