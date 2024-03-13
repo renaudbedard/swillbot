@@ -63,7 +63,7 @@ async function formatSlackMessage(source, query, req) {
   };
 
   const generatedBeer = await tryOpenAiRequest(
-    "curie:ft-personal-2023-07-21-05-21-01",
+    "ft:davinci-002:personal::8voOrAD3",
     source,
     query,
     32,

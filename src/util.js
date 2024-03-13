@@ -8,13 +8,16 @@ const config = require("./config");
 const restClient = require("./rest-client");
 const pgPool = require("./pg-pool");
 const _ = require("lodash");
-const { Configuration, OpenAIApi } = require("openai");
-const nodeUtil = require("util");
+const OpenAI = require("openai");
 
 const untappdParams = {
   client_id: config.UNTAPPD_CLIENT_ID,
   client_secret: config.UNTAPPD_CLIENT_SECRET
 };
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY // This is also the default, can be omitted
+});
 
 function indexOfFirstOf(haystack, needles, startIndex) {
   let minIndex = Infinity;
@@ -286,42 +289,43 @@ async function tryOpenAiRequest(modelId, thumbUrl, beerInfo, botName, maxTokens,
 
   var shortStyle = beerInfo.beer_style.split(" -")[0];
 
-  let response = null;
+  let completion = null;
   let attempts = 0;
-  while (response === null && attempts < 3) {
+  while (completion === null && attempts < 3) {
     try {
-      const configuration = new Configuration({
-        apiKey: process.env.OPENAI_API_KEY
-      });
-      const openai = new OpenAIApi(configuration);
-      response = await openai.createCompletionFromModel({
+      completion = await openai.completions.create({
         model: modelId,
         prompt: `${shortStyle} ->`,
         max_tokens: maxTokens,
         stop: [" END"],
         temperature: temperature,
         user: userId
-      });
-    } catch (err) {
-      response = null;
+      });      
+    } catch (error) {
+      if (error instanceof OpenAI.APIError) {
+        console.error(error.status);  // e.g. 401
+        console.error(error.message); // e.g. The authentication token you passed was invalid...
+        console.error(error.code);  // e.g. 'invalid_api_key'
+        console.error(error.type);  // e.g. 'invalid_request_error'
+
+        completion = null;
+        attempts++;
+        if (attempts == 3) {
+          throw error;
+        }
+      } else {
+        // Non-API error
+        console.log(error);
+      }      
+    }
+
+    if (!completion || !completion.choices || completion.choices.length == 0 || !completion.choices[0]) {
+      completion = null;
       attempts++;
-      if (attempts == 3) {
-        throw err;
-      }
-      console.log(`Failed with err : ${err}, retrying (attempt ${attempts})`);
     }
   }
 
-  if (response.status != 200) {
-    throw {
-      source: `Generating ${userId} review`,
-      message: `Error ${response.status}!\n${nodeUtil.inspect(response.data)}`
-    };
-  }
-
-  const responseData = response.data;
-
-  let generatedText = responseData.choices[0].text;
+  let generatedText = completion.choices[0].text;
 
   let textParts = generatedText.split(" ### ");
 
@@ -339,6 +343,220 @@ async function tryOpenAiRequest(modelId, thumbUrl, beerInfo, botName, maxTokens,
   return attachment;
 }
 
+/**
+ * @param {string} userInfo The user to get unique beers from
+ * @param {number} beerId The beer ID to stop at
+ * @param {number=} fetchRank The ordinal rank of the beer in this user's unique beers
+ * @return {Promise<object>} The review entity
+ */
+async function findAndCacheUserBeers(userInfo, beerId, fetchRank) {
+  const pgClient = await pgPool.connect();
+
+  let beerData = null;
+
+  const args = {
+    path: { userName: userInfo.name },
+    parameters: _.cloneDeep(untappdParams)
+  };
+
+  try {
+    // get the total count with a simple limit=1 request
+    args.parameters.limit = 1;
+    let res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
+    //console.log(`[${userInfo.name}] response : ${JSON.stringify(res.data.response)}`);
+
+    const totalCount = res.data.response.total_count;
+
+    //console.log(`total count: ${totalCount}`);
+
+    const limit = fetchRank == undefined ? 50 : 10;
+    args.parameters.limit = limit;
+
+    let batchCount = 0;
+    let upsertedCount = 0;
+    let initialOffset = 0;
+    let stopAtOffset = totalCount;
+
+    // set initial & stopping offset if we're looking for a specific rank
+    if (fetchRank != undefined) {
+      initialOffset = Math.max(0, totalCount - (fetchRank - 1) - limit / 2); // ranks are 1-based
+      stopAtOffset = Math.min(initialOffset + limit, totalCount);
+      console.log(`[${userInfo.name}] totalCount: ${totalCount} | initial offset: ${initialOffset} | stop at: ${stopAtOffset}`);
+    }
+
+    // early-out if there are no beers at all
+    if (res.data.response.beers.items.count == 0 || !res.data.response.beers.items[0]) {
+      console.log(`[${userInfo.name}] no beer found, earlying out!`);
+      return null;
+    }
+
+    // early-out if there are no new beers! (as per timestamp)
+    let recentCheckinTimestamp = new Date(res.data.response.beers.items[0].recent_created_at);
+    if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
+      console.log(`[${userInfo.name}] already up to date, earlying out!`);
+      return null;
+    }
+
+    pgClient.query("BEGIN;");
+
+    let aborted = false;
+    for (let cursor = initialOffset; cursor < stopAtOffset; cursor += batchCount) {
+      args.parameters.offset = cursor;
+
+      res = await restClient.getPromise("https://api.untappd.com/v4/user/beers/${userName}", args);
+
+      if (!res.data.response.beers) {
+        const err = {
+          source: `Find beer reviews for user ${userInfo.name} and beer ID ${beerId}`,
+          message: "API limit busted! Sorry, wait an hour before trying again.",
+          additionalInfo: res.data
+        };
+        throw err;
+      }
+
+      batchCount = res.data.response.beers.items.length;
+      for (let i = 0; i < batchCount; i++) {
+        const item = res.data.response.beers.items[i];
+        recentCheckinTimestamp = new Date(item.recent_created_at);
+
+        // stop if check-in timestamp is earlier than user_mapping's last_review_fetch_timestamp
+        // (unless we're force-recaching)
+        if (fetchRank == undefined && recentCheckinTimestamp < userInfo.lastReviewFetchTimestamp) {
+          console.log(
+            `[${userInfo.name}] stopped fetching; current item was checked in at ${recentCheckinTimestamp} but we last fetched at ${
+              userInfo.lastReviewFetchTimestamp
+            }`
+          );
+          aborted = true;
+          break;
+        }
+
+        const currentRank = totalCount - cursor - i;
+        await tryPgQuery(
+          pgClient,
+          `insert into user_reviews 
+          (username, beer_id, beer_name, recent_checkin_id, recent_checkin_timestamp, count, rating, rank) 
+					values ($1, $2, $3, $4, $5, $6, $7, $8)
+					on conflict (username, beer_id) do update set 
+					recent_checkin_id = $4, recent_checkin_timestamp = $5, count = $6, rating = $7, rank = $8;`,
+          [
+            userInfo.name,
+            item.beer.bid,
+            `${item.brewery.brewery_name} - ${item.beer.beer_name}`,
+            item.recent_checkin_id,
+            recentCheckinTimestamp,
+            item.count,
+            item.rating_score,
+            currentRank
+          ],
+          `Add user review for user ${userInfo.name} and beer ID ${item.beer.bid}`
+        );
+
+        // DEBUG logging
+        if (fetchRank != undefined) {
+          console.log(`upserted rank=${currentRank} (${item.brewery.brewery_name} - ${item.beer.beer_name})`);
+        }
+
+        console.log(`upserted beer id ${item.beer.bid} - recent checkin timestamp = ${recentCheckinTimestamp}, count = ${item.count}`);
+        upsertedCount++;
+
+        if (item.beer.bid == beerId) {
+          console.log(
+            `[${userInfo.name}] found '${item.brewery.brewery_name} - ${item.beer.beer_name}' at rank ${currentRank} (expected ${fetchRank})`
+          );
+          console.log(
+            `'${item.brewery.brewery_name} - ${item.beer.beer_name}' : had ${item.count} times, first ${item.first_had}, latest : ${
+              item.recent_created_at
+            }`
+          );
+          console.log(`full query : https://api.untappd.com/v4/user/beers/\$\{username\}, args = ${JSON.stringify(args)}`);
+          // mock a database result (faster than selecting it back)
+          beerData = {
+            username: userInfo.name,
+            beer_id: item.beer.bid,
+            beer_name: `${item.brewery.brewery_name} - ${item.beer.beer_name}`,
+            recent_checkin_id: item.recent_checkin_id,
+            recent_checkin_timestamp: recentCheckinTimestamp,
+            count: item.count,
+            rating: item.rating_score,
+            rank: currentRank
+          };
+        }
+      }
+      if (aborted) break;
+    }
+
+    pgClient.query("COMMIT;");
+    if (upsertedCount > 0) {
+      console.log(`[${userInfo.name}] upserted ${upsertedCount} rows`);
+    }
+  } catch (err) {
+    pgClient.query("ROLLBACK;");
+    throw err;
+  } finally {
+    pgClient.release();
+  }
+
+  // if we're not force-recaching, insert last fetch date into user_mapping
+  if (fetchRank == undefined) {
+    await tryPgQuery(
+      null,
+      `update user_mapping 
+      set last_review_fetch_timestamp = $1
+      where untappd_username = $2`,
+      [new Date(), userInfo.name],
+      `Update last review fetch timestamp for ${userInfo.name} to ${new Date()}`
+    );
+    //console.log(`[${userInfo.name}] updated last fetch time to ${new Date()}`);
+  }
+
+  return beerData;
+}
+
+/**
+ * @return {Promise<any[]>} All registered Untappd users' info
+ */
+async function getUntappdUsers() {
+  const result = await tryPgQuery(
+    null,
+    `select untappd_username, last_review_fetch_timestamp 
+    from user_mapping`,
+    null,
+    `Fetch all Untappd usernames`
+  );
+  return result.rows.map(x => {
+    return { name: x.untappd_username, lastReviewFetchTimestamp: x.last_review_fetch_timestamp };
+  });
+}
+
+/**
+ * @param {string} slackUserId The Slack user's ID
+ * @return {Promise<any>} The Untappd user info
+ */
+async function getUntappdUser(slackUserId) {
+  const result = await tryPgQuery(
+    null,
+    `select untappd_username, last_review_fetch_timestamp 
+    from user_mapping 
+    where slack_user_id = $1`,
+    [slackUserId],
+    `Find Untappd username from Slack ID '${slackUserId}'`
+  );
+
+  if (result.rows.length == 0) {
+    const err = {
+      source: `Finding Untappd username for Slack user ID ${slackUserId}`,
+      message: "No user found in database! Did you forget to register using `/username`?"
+    };
+    throw err;
+  }
+
+  return {
+    name: result.rows[0].untappd_username,
+    lastReviewFetchTimestamp: result.rows[0].last_review_fetch_timestamp
+  };
+}
+
 module.exports = {
   getRatingString: getRatingString,
   formatError: formatError,
@@ -350,5 +568,8 @@ module.exports = {
   sendDelayedResponse: sendDelayedResponse,
   onErrorRethrow: onErrorRethrow,
   getQueries: getQueries,
-  tryOpenAiRequest: tryOpenAiRequest
+  tryOpenAiRequest: tryOpenAiRequest,
+  findAndCacheUserBeers: findAndCacheUserBeers,
+  getUntappdUsers: getUntappdUsers,
+  getUntappdUser: getUntappdUser
 };

@@ -8,7 +8,7 @@ const util = require("../util");
 
 async function getFakeReviewAttachment(beerInfo, userId) {
   return await util.tryOpenAiRequest(
-    "curie:ft-personal-2022-03-05-04-53-34",
+    "ft:davinci-002:personal::8vnhQdPz",
     "https://ca.slack-edge.com/TBLMUG0RE-UBNESFXUP-9901982aefe7-512",
     beerInfo,
     "Matbot",

@@ -48,6 +48,21 @@ for (let command of commands) {
 
     command.handler(payload, res, req);
   });
+
+  if (command.altname) {
+    app.post(`/commands/${command.altname}`, (req, res) => {
+      let payload = req.body;
+  
+      if (!payload || payload.token !== config.SLACK_TOKEN) {
+        let err = "✋  An invalid slash token was provided\n" + "   Is your Slack slash token correctly configured?";
+        console.log(err);
+        res.status(401).end(err);
+        return;
+      }
+  
+      command.handler(payload, res, req);
+    });
+  }
 }
 
 app.listen(config.PORT, err => {

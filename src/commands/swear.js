@@ -93,7 +93,7 @@ const sacres = [
   "Invasion Brettanique",
   "DDDHHDDDHHH",
   "Vie de Château",
-  "Recyc-Québec",
+  "cartel Recyc-Québec",
   "PMB aux fruits",
   "Cascade",
   "bouchon d'cire",
@@ -197,7 +197,15 @@ const sacres = [
   "pissenlits pas prestigieux",
   "eau de spa",
   "IPA oxydée",
-  "lixiviat"
+  "lixiviat",
+  "Grandes-Plaines",
+  "Verre Messorem Limited Edition",
+  "slam",
+  "Justinflation",
+  "Mario Pelchat criminel notoire",
+  "Club Med à Paul Bernardo",
+  "rêve de princesse",
+  "bouillon de poulet"
 ];
 
 function isVowel(c) {

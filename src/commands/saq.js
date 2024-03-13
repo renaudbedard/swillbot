@@ -69,7 +69,7 @@ function scrapeWineInfo(
     args.parameters.product_list_limit = 96;
 
     let url = "https://www.saq.com/fr/catalogsearch/result/index/";
-    if (nouveautés) url = "https://www.saq.com/fr/nouveautes/nouveautes-cellier";
+    if (nouveautés) url = "https://www.saq.com/fr/nouveautes";
     else if (!query || query.length == 0) url = "https://www.saq.com/fr/produits";
 
     console.log(`url : ${url}`);
